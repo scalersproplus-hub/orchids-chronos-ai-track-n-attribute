@@ -16,27 +16,3 @@ export const API_ENDPOINTS = {
     GOOGLE_OCI: (customerId: string) => `https://googleads.googleapis.com/v15/customers/${customerId}/clickConversions:upload`,
     CHRONOS_TAG_INGEST: 'https://ingest.chronos-demo.io/v1/events'
 };
-
-// Environment variable keys
-export const ENV_KEYS = {
-    SUPABASE_URL: 'VITE_SUPABASE_URL',
-    SUPABASE_ANON_KEY: 'VITE_SUPABASE_ANON_KEY',
-    META_PIXEL_ID: 'VITE_META_PIXEL_ID',
-    META_CAPI_TOKEN: 'VITE_META_CAPI_TOKEN',
-    GOOGLE_CUSTOMER_ID: 'VITE_GOOGLE_CUSTOMER_ID',
-    GOOGLE_CONVERSION_ID: 'VITE_GOOGLE_CONVERSION_ID',
-    GEMINI_API_KEY: 'GEMINI_API_KEY',
-};
-
-// Default tracking events
-export const TRACKING_EVENTS = {
-    PAGE_VIEW: 'PageView',
-    VIEW_CONTENT: 'ViewContent',
-    ADD_TO_CART: 'AddToCart',
-    INITIATE_CHECKOUT: 'InitiateCheckout',
-    PURCHASE: 'Purchase',
-    LEAD: 'Lead',
-    COMPLETE_REGISTRATION: 'CompleteRegistration',
-    CONTACT: 'Contact',
-    CUSTOM: 'Custom',
-};
