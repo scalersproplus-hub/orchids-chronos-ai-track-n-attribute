@@ -1,37 +1,54 @@
-
 import { Campaign, CustomerJourney, AccountProfile, TimeSeriesData, AdSet, Anomaly } from '../types';
 
+// Default empty account - user fills in real values
 export const MOCK_ACCOUNTS: AccountProfile[] = [
   {
     id: 'act_001',
-    name: 'Chronos Demo Store',
-    websiteUrl: 'https://chronos-demo.io',
+    name: 'My Workspace',
+    websiteUrl: '',
     currency: 'USD',
-    timezone: 'America/Los_Angeles',
-    setupComplete: true,
-    metaPixelId: '1541448980200545',
-    metaCapiToken: 'EAAUYyxZAFhq0BQOYbbKdO5Ji2hMZCZCWaH7E0ZCDdObYf3KNbG4gKk36ZB8FUznPNhbPik1OOtMSzWi8sa0TY5xF6L2Pffk8UzjwAEBPZAbEDvY8pZAAO3wyZA0TcHcmHa4Sv6BEWWxMAojPBicOZA7CzZCngbtZCHT4cVXfhswbULzx1NqZBrnEZCQWjhBf9R38MhztIGwZDZD',
-    metaTestCode: 'TEST48545',
-    googleConversionId: 'AW-882910293',
-    googleConversionLabel: 'AbCdEfGhIjKlM',
-    googleDeveloperToken: 'DEV_TOKEN_PLACEHOLDER',
-    googleCustomerId: '123-456-7890',
+    timezone: 'UTC',
+    setupComplete: false,
+    
+    // All credentials empty by default - user must configure
+    metaPixelId: '',
+    metaCapiToken: '',
+    metaTestCode: '',
+    
+    googleConversionId: '',
+    googleConversionLabel: '',
+    googleDeveloperToken: '',
+    googleCustomerId: '',
+    
+    // CNAME tracking domain (for first-party tracking)
+    trackingDomain: '',
+    
     supabaseConfig: {
-      url: 'https://vapkerzbbdokniudetpq.supabase.co',
-      key: 'REPLACE_WITH_YOUR_REAL_SUPABASE_ANON_KEY',
+      url: '',
+      key: '',
     }
   },
-  {
-    id: 'act_002',
-    name: 'Client: Apex Fitness',
-    websiteUrl: 'https://apex-fitness.com',
-    currency: 'USD',
-    timezone: 'America/New_York',
-    setupComplete: true,
-    metaPixelId: '', metaCapiToken: '', metaTestCode: '',
-    supabaseConfig: { url: '', key: '' }
-  },
 ];
+
+// Example values for reference (shown in UI as placeholders/hints)
+export const EXAMPLE_VALUES = {
+  meta: {
+    pixelId: '1234567890123456',
+    capiToken: 'EAAGm0PX4ZCpsBAO...',
+    testCode: 'TEST12345',
+  },
+  google: {
+    customerId: '123-456-7890',
+    conversionId: 'AW-123456789',
+    conversionLabel: 'AbCdEfGhIjKlMnOp',
+    developerToken: 'aBcDeFgHiJkLmNoP',
+  },
+  supabase: {
+    url: 'https://yourproject.supabase.co',
+    key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+  },
+  trackingDomain: 'track.yourdomain.com',
+};
 
 const MOCK_ADSETS_FB1: AdSet[] = [
     { id: 'adset_fb1_1', name: 'Interests - Fitness Gurus', spend: 7000, chronosTrackedSales: 15000, roas: 2.14 },
