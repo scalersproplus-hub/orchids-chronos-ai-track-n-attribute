@@ -15,7 +15,10 @@ import { Toast } from './components/common/Toast';
 import { CommandPalette } from './components/common/CommandPalette';
 import { UserProfile } from './components/common/UserProfile';
 import { ConversationalAI } from './components/ai/ConversationalAI';
-import { NAV_ITEMS } from './constants';
+import { PredictiveInsights } from './components/ai/PredictiveInsights';
+import { FraudDetection } from './components/ai/FraudDetection';
+import { BudgetOptimizer } from './components/ai/BudgetOptimizer';
+import { NAV_ITEMS, AI_NAV_ITEMS, SETTINGS_NAV_ITEMS } from './constants';
 import { useKeyboardShortcuts, KEYBOARD_SHORTCUTS } from './hooks/useKeyboardShortcuts';
 import { BrainCircuit, Command, Keyboard, X } from 'lucide-react';
 import './index.css';
@@ -85,11 +88,17 @@ const AppContent: React.FC = () => {
       case 'datasources': return <DataSources />;
       case 'setup': return <SetupGuide />;
       case 'settings': return <Settings />;
+      // AI Features
+      case 'predictions': return <PredictiveInsights />;
+      case 'fraud': return <FraudDetection />;
+      case 'budget': return <BudgetOptimizer />;
       default: return <Dashboard campaigns={MOCK_CAMPAIGNS} />;
     }
   };
 
-  const currentPage = NAV_ITEMS.find(item => item.id === currentView) || NAV_ITEMS[0];
+  // Combine all nav items to find current page label
+  const allNavItems = [...NAV_ITEMS, ...AI_NAV_ITEMS, ...SETTINGS_NAV_ITEMS];
+  const currentPage = allNavItems.find(item => item.id === currentView) || NAV_ITEMS[0];
 
   return (
     <>
