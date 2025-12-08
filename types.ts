@@ -1,4 +1,3 @@
-
 export interface AdSet {
   id: string;
   name: string;
@@ -102,6 +101,9 @@ export interface AccountProfile {
   googleConversionLabel?: string;
   googleDeveloperToken?: string;
   googleCustomerId?: string;
+  
+  // First-party tracking domain (CNAME)
+  trackingDomain?: string;
   
   supabaseConfig: {
     url: string;
