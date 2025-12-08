@@ -292,3 +292,184 @@ export class FingerprintService {
 export const createFingerprintService = (): FingerprintService => {
     return new FingerprintService();
 };
+
+// Singleton instance for convenience
+let fingerprintServiceInstance: FingerprintService | null = null;
+
+export const getFingerprintService = (): FingerprintService => {
+    if (!fingerprintServiceInstance) {
+        fingerprintServiceInstance = new FingerprintService();
+    }
+    return fingerprintServiceInstance;
+};
+
+/**
+ * Hash email for privacy-safe matching (SHA-256)
+ */
+export const hashEmail = async (email: string): Promise<string> => {
+    const normalized = email.toLowerCase().trim();
+    const encoder = new TextEncoder();
+    const data = encoder.encode(normalized);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+};
+
+/**
+ * Hash phone number for privacy-safe matching
+ */
+export const hashPhone = async (phone: string): Promise<string> => {
+    // Remove all non-numeric characters except +
+    const normalized = phone.replace(/[^\d+]/g, '');
+    const encoder = new TextEncoder();
+    const data = encoder.encode(normalized);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+};
+
+/**
+ * Generate a deduplication event ID
+ */
+export const generateEventId = (eventName: string): string => {
+    const timestamp = Date.now();
+    const random = Math.random().toString(36).substr(2, 9);
+    return `${eventName}_${timestamp}_${random}`;
+};
+
+/**
+ * Collect device and browser information
+ */
+export const collectDeviceInfo = (): {
+    deviceType: 'mobile' | 'desktop' | 'tablet';
+    browser: string;
+    os: string;
+    userAgent: string;
+    screenResolution: string;
+    language: string;
+    timezone: string;
+} => {
+    const ua = navigator.userAgent;
+    
+    // Detect device type
+    const isMobile = /iPhone|iPad|iPod|Android|webOS|BlackBerry|IEMobile|Opera Mini/i.test(ua);
+    const isTablet = /iPad|Android(?!.*Mobile)/i.test(ua);
+    const deviceType = isTablet ? 'tablet' : isMobile ? 'mobile' : 'desktop';
+    
+    // Detect browser
+    let browser = 'Unknown';
+    if (ua.includes('Firefox')) browser = 'Firefox';
+    else if (ua.includes('SamsungBrowser')) browser = 'Samsung Browser';
+    else if (ua.includes('Opera') || ua.includes('OPR')) browser = 'Opera';
+    else if (ua.includes('Trident')) browser = 'Internet Explorer';
+    else if (ua.includes('Edge')) browser = 'Edge Legacy';
+    else if (ua.includes('Edg')) browser = 'Edge';
+    else if (ua.includes('Chrome')) browser = 'Chrome';
+    else if (ua.includes('Safari')) browser = 'Safari';
+    
+    // Detect OS
+    let os = 'Unknown';
+    if (ua.includes('Windows NT 10')) os = 'Windows 10/11';
+    else if (ua.includes('Windows NT 6.3')) os = 'Windows 8.1';
+    else if (ua.includes('Windows NT 6.2')) os = 'Windows 8';
+    else if (ua.includes('Windows NT 6.1')) os = 'Windows 7';
+    else if (ua.includes('Mac OS X')) os = 'macOS';
+    else if (ua.includes('Android')) os = 'Android';
+    else if (ua.includes('iOS') || ua.includes('iPhone') || ua.includes('iPad')) os = 'iOS';
+    else if (ua.includes('Linux')) os = 'Linux';
+    
+    return {
+        deviceType,
+        browser,
+        os,
+        userAgent: ua,
+        screenResolution: `${window.screen.width}x${window.screen.height}`,
+        language: navigator.language,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    };
+};
+
+/**
+ * Parse URL parameters to extract ad tracking IDs
+ */
+export const extractTrackingParams = (): {
+    gclid?: string;
+    gbraid?: string;
+    wbraid?: string;
+    fbclid?: string;
+    fbc?: string;
+    fbp?: string;
+    utm_source?: string;
+    utm_medium?: string;
+    utm_campaign?: string;
+    utm_content?: string;
+    utm_term?: string;
+} => {
+    const params = new URLSearchParams(window.location.search);
+    const result: Record<string, string> = {};
+    
+    // Google Click IDs
+    const gclid = params.get('gclid');
+    const gbraid = params.get('gbraid');
+    const wbraid = params.get('wbraid');
+    
+    // Facebook Click ID
+    const fbclid = params.get('fbclid');
+    
+    // UTM parameters
+    const utmParams = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term'];
+    
+    if (gclid) result.gclid = gclid;
+    if (gbraid) result.gbraid = gbraid;
+    if (wbraid) result.wbraid = wbraid;
+    if (fbclid) result.fbclid = fbclid;
+    
+    utmParams.forEach(param => {
+        const value = params.get(param);
+        if (value) result[param] = value;
+    });
+    
+    // Try to get Facebook cookies
+    try {
+        const cookies = document.cookie.split(';').reduce((acc, cookie) => {
+            const [key, value] = cookie.trim().split('=');
+            acc[key] = value;
+            return acc;
+        }, {} as Record<string, string>);
+        
+        if (cookies._fbc) result.fbc = cookies._fbc;
+        if (cookies._fbp) result.fbp = cookies._fbp;
+    } catch (e) {
+        // Cookies might be blocked
+    }
+    
+    // Store click IDs in localStorage for persistence
+    try {
+        if (gclid) localStorage.setItem('chronos_gclid', gclid);
+        if (gbraid) localStorage.setItem('chronos_gbraid', gbraid);
+        if (wbraid) localStorage.setItem('chronos_wbraid', wbraid);
+        if (fbclid) localStorage.setItem('chronos_fbclid', fbclid);
+        
+        // Check localStorage for previously stored click IDs
+        if (!result.gclid) {
+            const storedGclid = localStorage.getItem('chronos_gclid');
+            if (storedGclid) result.gclid = storedGclid;
+        }
+        if (!result.gbraid) {
+            const storedGbraid = localStorage.getItem('chronos_gbraid');
+            if (storedGbraid) result.gbraid = storedGbraid;
+        }
+        if (!result.wbraid) {
+            const storedWbraid = localStorage.getItem('chronos_wbraid');
+            if (storedWbraid) result.wbraid = storedWbraid;
+        }
+        if (!result.fbclid) {
+            const storedFbclid = localStorage.getItem('chronos_fbclid');
+            if (storedFbclid) result.fbclid = storedFbclid;
+        }
+    } catch (e) {
+        // localStorage might be blocked
+    }
+    
+    return result;
+};
