@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { ChevronDown, PlusCircle, Check, BrainCircuit } from 'lucide-react';
+import { ChevronDown, PlusCircle, Check, BrainCircuit, Sparkles } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
-import { NAV_ITEMS } from '../constants';
+import { NAV_ITEMS, AI_NAV_ITEMS, SETTINGS_NAV_ITEMS } from '../constants';
 
 interface SidebarProps {}
 
@@ -24,6 +24,26 @@ export const Sidebar: React.FC<SidebarProps> = () => {
   const handleSwitchView = (view: string) => {
     setCurrentView(view);
   };
+
+  const NavItem = ({ item, badge }: { item: typeof NAV_ITEMS[0] & { badge?: string }, badge?: string }) => (
+    <button
+      key={item.id}
+      onClick={() => handleSwitchView(item.id)}
+      className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 ${
+        currentView === item.id
+          ? 'bg-chronos-900 text-chronos-400 border border-chronos-800'
+          : 'text-gray-400 hover:text-white hover:bg-chronos-900/50'
+      }`}
+    >
+      <item.icon className="w-4 h-4" />
+      <span className="font-medium text-sm flex-1 text-left">{item.label}</span>
+      {(item as any).badge && (
+        <span className="px-1.5 py-0.5 text-[10px] font-bold bg-gradient-to-r from-purple-500/20 to-chronos-500/20 text-purple-400 rounded border border-purple-500/30">
+          {(item as any).badge}
+        </span>
+      )}
+    </button>
+  );
 
   return (
     <div className="w-64 bg-chronos-950 border-r border-chronos-800 flex flex-col h-full fixed left-0 top-0 z-50">
@@ -78,25 +98,49 @@ export const Sidebar: React.FC<SidebarProps> = () => {
         </div>
       </div>
 
-      <nav className="flex-1 p-4 space-y-2">
-        {NAV_ITEMS.map((item) => (
-          <button
-            key={item.id}
-            onClick={() => handleSwitchView(item.id)}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-              currentView === item.id
-                ? 'bg-chronos-900 text-chronos-400 border border-chronos-800'
-                : 'text-gray-400 hover:text-white hover:bg-chronos-900/50'
-            }`}
-          >
-            <item.icon className="w-5 h-5" />
-            <span className="font-medium text-sm">{item.label}</span>
-          </button>
-        ))}
+      <nav className="flex-1 p-4 space-y-6 overflow-y-auto">
+        {/* Main Navigation */}
+        <div className="space-y-1">
+          <span className="text-[10px] font-bold text-gray-600 uppercase tracking-wider px-4">Analytics</span>
+          <div className="space-y-1 mt-2">
+            {NAV_ITEMS.map((item) => (
+              <NavItem key={item.id} item={item} />
+            ))}
+          </div>
+        </div>
+
+        {/* AI Features */}
+        <div className="space-y-1">
+          <div className="flex items-center gap-2 px-4">
+            <Sparkles className="w-3 h-3 text-purple-400" />
+            <span className="text-[10px] font-bold text-purple-400 uppercase tracking-wider">AI Features</span>
+          </div>
+          <div className="space-y-1 mt-2">
+            {AI_NAV_ITEMS.map((item) => (
+              <NavItem key={item.id} item={item} />
+            ))}
+          </div>
+        </div>
+
+        {/* Settings */}
+        <div className="space-y-1">
+          <span className="text-[10px] font-bold text-gray-600 uppercase tracking-wider px-4">Configuration</span>
+          <div className="space-y-1 mt-2">
+            {SETTINGS_NAV_ITEMS.map((item) => (
+              <NavItem key={item.id} item={item} />
+            ))}
+          </div>
+        </div>
       </nav>
 
       <div className="p-4 border-t border-chronos-800">
-         {/* User Profile Component can be placed here in the future */}
+        <div className="p-3 bg-gradient-to-r from-purple-900/20 to-chronos-900/20 border border-purple-500/20 rounded-lg">
+          <div className="flex items-center gap-2 mb-1">
+            <Sparkles className="w-4 h-4 text-purple-400" />
+            <span className="text-xs font-semibold text-white">Pro Features</span>
+          </div>
+          <p className="text-[10px] text-gray-400">AI-powered insights enabled</p>
+        </div>
       </div>
     </div>
   );
