@@ -1,36 +1,62 @@
 -- ============================================
--- CHRONOS AI - SUPABASE DATABASE SCHEMA
+-- CHRONOS AI - SUPABASE DATABASE SCHEMA v2.0
 -- ============================================
 -- 
--- This SQL script creates all the tables needed for the Chronos AI
--- attribution tracking system. Run this in your Supabase SQL Editor.
+-- IMPORTANT: This schema is designed for SINGLE WORKSPACE use
+-- without authentication. RLS is COMPLETELY DISABLED.
 --
--- Features:
--- - Visitor fingerprinting and identity resolution
--- - Event tracking with full attribution data
--- - Conversion tracking with offline upload status
--- - Cross-device identity graph
--- - RLS DISABLED for maximum compatibility
+-- INSTALLATION:
+-- 1. Go to https://supabase.com/dashboard
+-- 2. Create a new project (or use existing)
+-- 3. Go to SQL Editor
+-- 4. Paste this ENTIRE script and click "Run"
+-- 5. Copy your Project URL and anon key from Settings → API
+-- 
+-- SECURITY NOTE:
+-- Since RLS is disabled, anyone with your anon key can read/write.
+-- For production, consider:
+-- - Using a backend proxy to hide your Supabase credentials
+-- - Implementing proper RLS policies with authentication
 -- ============================================
 
 -- Enable UUID extension if not already enabled
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- ============================================
--- DISABLE ROW LEVEL SECURITY (RLS)
--- This ensures the tracking tag can read/write freely
+-- STEP 1: DROP ALL EXISTING TABLES & POLICIES
+-- (Safe to run multiple times)
 -- ============================================
 
--- Drop any existing policies first (run these if upgrading)
--- DROP POLICY IF EXISTS "anon_select_visitors" ON visitors;
--- DROP POLICY IF EXISTS "anon_insert_visitors" ON visitors;
--- etc.
+-- Drop existing triggers first
+DROP TRIGGER IF EXISTS trigger_update_visitor_on_event ON events;
+DROP TRIGGER IF EXISTS trigger_visitors_updated ON visitors;
+DROP TRIGGER IF EXISTS trigger_conversions_updated ON conversions;
+DROP TRIGGER IF EXISTS trigger_settings_updated ON settings;
 
--- ============================================
--- 1. VISITORS TABLE
--- Stores unique visitor profiles identified by fingerprint
--- ============================================
+-- Drop existing functions
+DROP FUNCTION IF EXISTS update_visitor_last_seen() CASCADE;
+DROP FUNCTION IF EXISTS update_updated_at() CASCADE;
+
+-- Drop existing tables in correct order (respecting foreign keys)
+DROP TABLE IF EXISTS webhook_logs CASCADE;
+DROP TABLE IF EXISTS upload_batches CASCADE;
+DROP TABLE IF EXISTS campaigns CASCADE;
+DROP TABLE IF EXISTS identity_graph CASCADE;
+DROP TABLE IF EXISTS conversions CASCADE;
+DROP TABLE IF EXISTS events CASCADE;
 DROP TABLE IF EXISTS visitors CASCADE;
+DROP TABLE IF EXISTS settings CASCADE;
+DROP TABLE IF EXISTS fraud_signals CASCADE;
+DROP TABLE IF EXISTS predictions CASCADE;
+
+-- ============================================
+-- STEP 2: CREATE TABLES (RLS DISABLED)
+-- ============================================
+
+-- ----------------------------------------
+-- VISITORS TABLE
+-- Stores unique visitor profiles
+-- ----------------------------------------
 CREATE TABLE visitors (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     fingerprint_id VARCHAR(64) UNIQUE NOT NULL,
@@ -42,6 +68,7 @@ CREATE TABLE visitors (
     phone_hash VARCHAR(64), -- SHA-256 hash for CAPI matching
     first_name VARCHAR(100),
     last_name VARCHAR(100),
+    external_id VARCHAR(255), -- Your system's user ID
     
     -- Tracking metadata
     first_seen TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -55,44 +82,63 @@ CREATE TABLE visitors (
     ip_addresses TEXT[] DEFAULT '{}',
     user_agents TEXT[] DEFAULT '{}',
     
-    -- First touch attribution
+    -- First touch attribution (never changes)
     first_utm_source VARCHAR(255),
     first_utm_medium VARCHAR(255),
     first_utm_campaign VARCHAR(255),
+    first_utm_content VARCHAR(255),
+    first_utm_term VARCHAR(255),
     first_gclid VARCHAR(255),
     first_fbclid VARCHAR(255),
     first_referrer TEXT,
+    first_landing_page TEXT,
+    
+    -- Last touch attribution (updates with each visit)
+    last_utm_source VARCHAR(255),
+    last_utm_medium VARCHAR(255),
+    last_utm_campaign VARCHAR(255),
+    last_gclid VARCHAR(255),
+    last_fbclid VARCHAR(255),
+    
+    -- Calculated scores
+    engagement_score INTEGER DEFAULT 0, -- 0-100
+    conversion_probability DECIMAL(5, 4) DEFAULT 0, -- 0.0000 to 1.0000
+    predicted_ltv DECIMAL(12, 2) DEFAULT 0,
     
     -- Custom properties
     custom_properties JSONB DEFAULT '{}',
     tags TEXT[] DEFAULT '{}',
+    
+    -- Fraud detection
+    fraud_score INTEGER DEFAULT 0, -- 0-100, higher = more suspicious
+    is_bot BOOLEAN DEFAULT FALSE,
     
     -- Timestamps
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- DISABLE RLS on visitors
+-- DISABLE RLS - Critical for no-auth setup
 ALTER TABLE visitors DISABLE ROW LEVEL SECURITY;
 
--- Grant full access to anon and authenticated roles
+-- Grant permissions to all roles
 GRANT ALL ON visitors TO anon;
 GRANT ALL ON visitors TO authenticated;
 GRANT ALL ON visitors TO service_role;
 
--- Indexes for visitor lookups
-CREATE INDEX IF NOT EXISTS idx_visitors_fingerprint ON visitors(fingerprint_id);
-CREATE INDEX IF NOT EXISTS idx_visitors_email ON visitors(email);
-CREATE INDEX IF NOT EXISTS idx_visitors_email_hash ON visitors(email_hash);
-CREATE INDEX IF NOT EXISTS idx_visitors_phone_hash ON visitors(phone_hash);
-CREATE INDEX IF NOT EXISTS idx_visitors_first_seen ON visitors(first_seen);
-CREATE INDEX IF NOT EXISTS idx_visitors_last_seen ON visitors(last_seen);
+-- Indexes for fast lookups
+CREATE INDEX idx_visitors_fingerprint ON visitors(fingerprint_id);
+CREATE INDEX idx_visitors_email ON visitors(email);
+CREATE INDEX idx_visitors_email_hash ON visitors(email_hash);
+CREATE INDEX idx_visitors_external_id ON visitors(external_id);
+CREATE INDEX idx_visitors_first_seen ON visitors(first_seen);
+CREATE INDEX idx_visitors_last_seen ON visitors(last_seen);
+CREATE INDEX idx_visitors_fraud_score ON visitors(fraud_score);
 
--- ============================================
--- 2. EVENTS TABLE
--- Stores all tracking events (pageviews, clicks, etc.)
--- ============================================
-DROP TABLE IF EXISTS events CASCADE;
+-- ----------------------------------------
+-- EVENTS TABLE
+-- Stores all tracking events
+-- ----------------------------------------
 CREATE TABLE events (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     visitor_id UUID REFERENCES visitors(id) ON DELETE CASCADE,
@@ -101,10 +147,11 @@ CREATE TABLE events (
     -- Event details
     event_name VARCHAR(100) NOT NULL,
     event_id VARCHAR(100) UNIQUE, -- For deduplication
-    event_type VARCHAR(50) DEFAULT 'custom', -- pageview, click, form_submit, purchase, custom
+    event_type VARCHAR(50) DEFAULT 'custom', -- pageview, click, form, purchase, custom
     
     -- Page data
     page_url TEXT,
+    page_path VARCHAR(500),
     page_title VARCHAR(500),
     referrer TEXT,
     
@@ -120,99 +167,133 @@ CREATE TABLE events (
     gbraid VARCHAR(255),
     wbraid VARCHAR(255),
     fbclid VARCHAR(255),
-    fbc VARCHAR(255), -- Facebook cookie
-    fbp VARCHAR(255), -- Facebook browser ID
-    ttclid VARCHAR(255), -- TikTok click ID
-    msclkid VARCHAR(255), -- Microsoft click ID
+    fbc VARCHAR(255),
+    fbp VARCHAR(255),
+    ttclid VARCHAR(255),
+    msclkid VARCHAR(255),
+    li_fat_id VARCHAR(255), -- LinkedIn
     
     -- Device info
     device_type VARCHAR(20), -- mobile, desktop, tablet
     browser VARCHAR(50),
+    browser_version VARCHAR(20),
     os VARCHAR(50),
+    os_version VARCHAR(20),
     user_agent TEXT,
     ip_address VARCHAR(45),
     
     -- Location (from IP)
     country VARCHAR(2),
+    country_name VARCHAR(100),
     region VARCHAR(100),
     city VARCHAR(100),
+    postal_code VARCHAR(20),
+    latitude DECIMAL(10, 8),
+    longitude DECIMAL(11, 8),
     
-    -- Event value (for purchase events)
+    -- Session data
+    session_id VARCHAR(64),
+    session_pageviews INTEGER DEFAULT 1,
+    time_on_page INTEGER, -- seconds
+    scroll_depth INTEGER, -- percentage 0-100
+    
+    -- Event value (for purchase/conversion events)
     event_value DECIMAL(12, 2),
     event_currency VARCHAR(3) DEFAULT 'USD',
     
     -- Custom event data
     custom_data JSONB DEFAULT '{}',
     
+    -- Fraud signals
+    fraud_signals JSONB DEFAULT '{}',
+    
     -- Timestamps
     event_time TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- DISABLE RLS on events
 ALTER TABLE events DISABLE ROW LEVEL SECURITY;
-
--- Grant full access
 GRANT ALL ON events TO anon;
 GRANT ALL ON events TO authenticated;
 GRANT ALL ON events TO service_role;
 
--- Indexes for event queries
-CREATE INDEX IF NOT EXISTS idx_events_visitor ON events(visitor_id);
-CREATE INDEX IF NOT EXISTS idx_events_fingerprint ON events(fingerprint_id);
-CREATE INDEX IF NOT EXISTS idx_events_name ON events(event_name);
-CREATE INDEX IF NOT EXISTS idx_events_time ON events(event_time);
-CREATE INDEX IF NOT EXISTS idx_events_gclid ON events(gclid);
-CREATE INDEX IF NOT EXISTS idx_events_fbclid ON events(fbclid);
-CREATE INDEX IF NOT EXISTS idx_events_utm_source ON events(utm_source);
+CREATE INDEX idx_events_visitor ON events(visitor_id);
+CREATE INDEX idx_events_fingerprint ON events(fingerprint_id);
+CREATE INDEX idx_events_name ON events(event_name);
+CREATE INDEX idx_events_time ON events(event_time);
+CREATE INDEX idx_events_session ON events(session_id);
+CREATE INDEX idx_events_gclid ON events(gclid);
+CREATE INDEX idx_events_fbclid ON events(fbclid);
+CREATE INDEX idx_events_utm_source ON events(utm_source);
+CREATE INDEX idx_events_page_path ON events(page_path);
 
--- ============================================
--- 3. CONVERSIONS TABLE
+-- ----------------------------------------
+-- CONVERSIONS TABLE
 -- Stores purchase/conversion events for offline upload
--- ============================================
-DROP TABLE IF EXISTS conversions CASCADE;
+-- ----------------------------------------
 CREATE TABLE conversions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     visitor_id UUID REFERENCES visitors(id) ON DELETE SET NULL,
     fingerprint_id VARCHAR(64),
     
-    -- Customer identity
+    -- Customer identity for CAPI matching
     email VARCHAR(255),
     email_hash VARCHAR(64),
     phone VARCHAR(50),
     phone_hash VARCHAR(64),
     first_name VARCHAR(100),
     last_name VARCHAR(100),
+    external_id VARCHAR(255),
+    
+    -- Location for CAPI
+    city VARCHAR(100),
+    state VARCHAR(50),
+    zip_code VARCHAR(20),
+    country VARCHAR(2),
     
     -- Conversion details
-    order_id VARCHAR(100),
+    order_id VARCHAR(100) UNIQUE,
     conversion_value DECIMAL(12, 2) NOT NULL,
     currency VARCHAR(3) DEFAULT 'USD',
-    conversion_type VARCHAR(50) DEFAULT 'purchase', -- purchase, lead, signup, etc.
+    conversion_type VARCHAR(50) DEFAULT 'purchase', -- purchase, lead, signup, subscription
     
     -- Products (for e-commerce)
-    products JSONB DEFAULT '[]', -- [{id, name, price, quantity}]
+    products JSONB DEFAULT '[]', -- [{id, name, sku, price, quantity, category}]
     
-    -- Attribution click IDs
+    -- Attribution click IDs (captured at conversion time)
     gclid VARCHAR(255),
     gbraid VARCHAR(255),
     wbraid VARCHAR(255),
     fbc VARCHAR(255),
     fbp VARCHAR(255),
     
-    -- Attribution data (full journey)
-    attribution_data JSONB DEFAULT '{}', -- {first_touch, last_touch, touchpoints}
+    -- Full attribution data
+    attribution_model VARCHAR(50) DEFAULT 'last_click', -- first_click, last_click, linear, time_decay, position_based
+    attribution_data JSONB DEFAULT '{}', -- Full journey data
+    touchpoints JSONB DEFAULT '[]', -- Array of all touchpoints
     
     -- Meta CAPI upload status
     meta_uploaded BOOLEAN DEFAULT FALSE,
     meta_upload_time TIMESTAMP WITH TIME ZONE,
     meta_upload_response JSONB,
     meta_event_id VARCHAR(100),
+    meta_match_quality DECIMAL(3, 2), -- 0.00 to 1.00
     
     -- Google Ads OCI upload status
     google_uploaded BOOLEAN DEFAULT FALSE,
     google_upload_time TIMESTAMP WITH TIME ZONE,
     google_upload_response JSONB,
+    google_conversion_action_id VARCHAR(100),
+    
+    -- TikTok Events API
+    tiktok_uploaded BOOLEAN DEFAULT FALSE,
+    tiktok_upload_time TIMESTAMP WITH TIME ZONE,
+    tiktok_upload_response JSONB,
+    
+    -- Recurring revenue tracking
+    is_recurring BOOLEAN DEFAULT FALSE,
+    subscription_id VARCHAR(100),
+    mrr_impact DECIMAL(12, 2), -- Monthly recurring revenue impact
     
     -- Timestamps
     conversion_time TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -220,47 +301,47 @@ CREATE TABLE conversions (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- DISABLE RLS on conversions
 ALTER TABLE conversions DISABLE ROW LEVEL SECURITY;
-
--- Grant full access
 GRANT ALL ON conversions TO anon;
 GRANT ALL ON conversions TO authenticated;
 GRANT ALL ON conversions TO service_role;
 
--- Indexes for conversion queries
-CREATE INDEX IF NOT EXISTS idx_conversions_visitor ON conversions(visitor_id);
-CREATE INDEX IF NOT EXISTS idx_conversions_email ON conversions(email);
-CREATE INDEX IF NOT EXISTS idx_conversions_order_id ON conversions(order_id);
-CREATE INDEX IF NOT EXISTS idx_conversions_meta_uploaded ON conversions(meta_uploaded);
-CREATE INDEX IF NOT EXISTS idx_conversions_google_uploaded ON conversions(google_uploaded);
-CREATE INDEX IF NOT EXISTS idx_conversions_time ON conversions(conversion_time);
-CREATE INDEX IF NOT EXISTS idx_conversions_gclid ON conversions(gclid);
+CREATE INDEX idx_conversions_visitor ON conversions(visitor_id);
+CREATE INDEX idx_conversions_fingerprint ON conversions(fingerprint_id);
+CREATE INDEX idx_conversions_email ON conversions(email);
+CREATE INDEX idx_conversions_email_hash ON conversions(email_hash);
+CREATE INDEX idx_conversions_order_id ON conversions(order_id);
+CREATE INDEX idx_conversions_meta_uploaded ON conversions(meta_uploaded) WHERE NOT meta_uploaded;
+CREATE INDEX idx_conversions_google_uploaded ON conversions(google_uploaded) WHERE NOT google_uploaded;
+CREATE INDEX idx_conversions_time ON conversions(conversion_time);
+CREATE INDEX idx_conversions_gclid ON conversions(gclid);
 
--- ============================================
--- 4. IDENTITY_GRAPH TABLE
--- Links multiple devices/sessions to the same user
--- ============================================
-DROP TABLE IF EXISTS identity_graph CASCADE;
+-- ----------------------------------------
+-- IDENTITY_GRAPH TABLE
+-- Links multiple devices/sessions to same user
+-- ----------------------------------------
 CREATE TABLE identity_graph (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    visitor_id UUID REFERENCES visitors(id) ON DELETE CASCADE,
+    master_visitor_id UUID REFERENCES visitors(id) ON DELETE CASCADE, -- Main identity
+    linked_visitor_id UUID REFERENCES visitors(id) ON DELETE CASCADE, -- Merged identity
     
-    -- Identity signals
+    -- Identity signals used for match
     fingerprint_id VARCHAR(64) NOT NULL,
     device_id VARCHAR(100),
     email VARCHAR(255),
     phone VARCHAR(50),
+    external_id VARCHAR(255),
+    ip_address VARCHAR(45),
     
     -- Match metadata
-    match_type VARCHAR(20) NOT NULL, -- deterministic, probabilistic
+    match_type VARCHAR(30) NOT NULL, -- deterministic, probabilistic, declared
+    match_method VARCHAR(50), -- email_match, phone_match, fingerprint_similar, login
     confidence_score INTEGER DEFAULT 50, -- 0-100
     
     -- Device info at time of match
     device_type VARCHAR(20),
     browser VARCHAR(50),
     os VARCHAR(50),
-    ip_address VARCHAR(45),
     
     -- Timestamps
     first_seen TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -268,51 +349,64 @@ CREATE TABLE identity_graph (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- DISABLE RLS on identity_graph
 ALTER TABLE identity_graph DISABLE ROW LEVEL SECURITY;
-
--- Grant full access
 GRANT ALL ON identity_graph TO anon;
 GRANT ALL ON identity_graph TO authenticated;
 GRANT ALL ON identity_graph TO service_role;
 
--- Indexes for identity resolution
-CREATE INDEX IF NOT EXISTS idx_identity_visitor ON identity_graph(visitor_id);
-CREATE INDEX IF NOT EXISTS idx_identity_fingerprint ON identity_graph(fingerprint_id);
-CREATE INDEX IF NOT EXISTS idx_identity_email ON identity_graph(email);
-CREATE INDEX IF NOT EXISTS idx_identity_match_type ON identity_graph(match_type);
+CREATE INDEX idx_identity_master ON identity_graph(master_visitor_id);
+CREATE INDEX idx_identity_linked ON identity_graph(linked_visitor_id);
+CREATE INDEX idx_identity_fingerprint ON identity_graph(fingerprint_id);
+CREATE INDEX idx_identity_email ON identity_graph(email);
+CREATE INDEX idx_identity_external_id ON identity_graph(external_id);
 
--- ============================================
--- 5. CAMPAIGNS TABLE
+-- ----------------------------------------
+-- CAMPAIGNS TABLE
 -- Stores campaign performance data
--- ============================================
-DROP TABLE IF EXISTS campaigns CASCADE;
+-- ----------------------------------------
 CREATE TABLE campaigns (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     
     -- Campaign identity
-    platform VARCHAR(50) NOT NULL, -- facebook, google, tiktok, etc.
+    platform VARCHAR(50) NOT NULL, -- meta, google, tiktok, linkedin, etc.
     platform_campaign_id VARCHAR(100),
+    platform_adset_id VARCHAR(100),
+    platform_ad_id VARCHAR(100),
     campaign_name VARCHAR(500),
+    adset_name VARCHAR(500),
+    ad_name VARCHAR(500),
     
     -- Campaign metadata
     status VARCHAR(20) DEFAULT 'active', -- active, paused, deleted
     objective VARCHAR(100),
     
-    -- Performance metrics (synced from ad platforms)
+    -- Platform-reported metrics
     spend DECIMAL(12, 2) DEFAULT 0,
     impressions BIGINT DEFAULT 0,
     clicks BIGINT DEFAULT 0,
     platform_conversions INTEGER DEFAULT 0,
     platform_revenue DECIMAL(12, 2) DEFAULT 0,
     
-    -- Chronos tracked metrics
+    -- Chronos-tracked metrics (more accurate)
+    chronos_clicks INTEGER DEFAULT 0,
     chronos_conversions INTEGER DEFAULT 0,
     chronos_revenue DECIMAL(12, 2) DEFAULT 0,
+    chronos_leads INTEGER DEFAULT 0,
+    
+    -- Calculated metrics
+    cpa DECIMAL(12, 2), -- Cost per acquisition
+    roas DECIMAL(8, 4), -- Return on ad spend
+    cpc DECIMAL(8, 4), -- Cost per click
+    ctr DECIMAL(8, 6), -- Click through rate
+    cvr DECIMAL(8, 6), -- Conversion rate
+    
+    -- AI predictions
+    predicted_roas DECIMAL(8, 4),
+    recommended_budget DECIMAL(12, 2),
+    optimization_score INTEGER, -- 0-100
     
     -- Date range
-    date_start DATE,
-    date_end DATE,
+    date DATE,
     
     -- Timestamps
     last_synced TIMESTAMP WITH TIME ZONE,
@@ -320,62 +414,137 @@ CREATE TABLE campaigns (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- DISABLE RLS on campaigns
 ALTER TABLE campaigns DISABLE ROW LEVEL SECURITY;
-
--- Grant full access
 GRANT ALL ON campaigns TO anon;
 GRANT ALL ON campaigns TO authenticated;
 GRANT ALL ON campaigns TO service_role;
 
--- Indexes for campaign queries
-CREATE INDEX IF NOT EXISTS idx_campaigns_platform ON campaigns(platform);
-CREATE INDEX IF NOT EXISTS idx_campaigns_name ON campaigns(campaign_name);
+CREATE INDEX idx_campaigns_platform ON campaigns(platform);
+CREATE INDEX idx_campaigns_platform_id ON campaigns(platform_campaign_id);
+CREATE INDEX idx_campaigns_date ON campaigns(date);
+CREATE INDEX idx_campaigns_status ON campaigns(status);
 
--- ============================================
--- 6. UPLOAD_BATCHES TABLE
+-- ----------------------------------------
+-- UPLOAD_BATCHES TABLE
 -- Tracks offline conversion upload history
--- ============================================
-DROP TABLE IF EXISTS upload_batches CASCADE;
+-- ----------------------------------------
 CREATE TABLE upload_batches (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     
     -- Batch info
-    platform VARCHAR(20) NOT NULL, -- meta, google
-    batch_type VARCHAR(20) DEFAULT 'manual', -- manual, csv, auto
+    platform VARCHAR(20) NOT NULL, -- meta, google, tiktok
+    batch_type VARCHAR(20) DEFAULT 'auto', -- manual, csv, auto, webhook
     
     -- Results
     total_conversions INTEGER DEFAULT 0,
     successful_uploads INTEGER DEFAULT 0,
     failed_uploads INTEGER DEFAULT 0,
     match_rate DECIMAL(5, 2), -- percentage
+    average_match_quality DECIMAL(3, 2),
     
     -- Response data
     response_data JSONB DEFAULT '{}',
-    error_log TEXT,
+    error_details JSONB DEFAULT '[]',
+    conversion_ids UUID[] DEFAULT '{}',
     
     -- Timestamps
-    upload_time TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    started_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    completed_at TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- DISABLE RLS on upload_batches
 ALTER TABLE upload_batches DISABLE ROW LEVEL SECURITY;
-
--- Grant full access
 GRANT ALL ON upload_batches TO anon;
 GRANT ALL ON upload_batches TO authenticated;
 GRANT ALL ON upload_batches TO service_role;
 
--- Index for upload history
-CREATE INDEX IF NOT EXISTS idx_upload_batches_platform ON upload_batches(platform);
-CREATE INDEX IF NOT EXISTS idx_upload_batches_time ON upload_batches(upload_time);
+CREATE INDEX idx_upload_batches_platform ON upload_batches(platform);
+CREATE INDEX idx_upload_batches_time ON upload_batches(started_at);
 
--- ============================================
--- 7. WEBHOOK_LOGS TABLE (NEW - For real-time integrations)
+-- ----------------------------------------
+-- FRAUD_SIGNALS TABLE (NEW)
+-- Tracks suspicious activity patterns
+-- ----------------------------------------
+CREATE TABLE fraud_signals (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    visitor_id UUID REFERENCES visitors(id) ON DELETE CASCADE,
+    fingerprint_id VARCHAR(64),
+    
+    -- Signal details
+    signal_type VARCHAR(50) NOT NULL, -- bot, click_fraud, conversion_fraud, suspicious_ip, datacenter
+    severity VARCHAR(20) DEFAULT 'medium', -- low, medium, high, critical
+    confidence INTEGER DEFAULT 50, -- 0-100
+    
+    -- Evidence
+    evidence JSONB DEFAULT '{}',
+    ip_address VARCHAR(45),
+    user_agent TEXT,
+    
+    -- Resolution
+    status VARCHAR(20) DEFAULT 'pending', -- pending, confirmed, dismissed
+    resolved_at TIMESTAMP WITH TIME ZONE,
+    resolution_notes TEXT,
+    
+    -- Timestamps
+    detected_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+ALTER TABLE fraud_signals DISABLE ROW LEVEL SECURITY;
+GRANT ALL ON fraud_signals TO anon;
+GRANT ALL ON fraud_signals TO authenticated;
+GRANT ALL ON fraud_signals TO service_role;
+
+CREATE INDEX idx_fraud_visitor ON fraud_signals(visitor_id);
+CREATE INDEX idx_fraud_type ON fraud_signals(signal_type);
+CREATE INDEX idx_fraud_severity ON fraud_signals(severity);
+CREATE INDEX idx_fraud_status ON fraud_signals(status);
+
+-- ----------------------------------------
+-- PREDICTIONS TABLE (NEW)
+-- Stores AI-generated predictions
+-- ----------------------------------------
+CREATE TABLE predictions (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    
+    -- Prediction target
+    prediction_type VARCHAR(50) NOT NULL, -- conversion_probability, ltv, churn, next_purchase
+    target_type VARCHAR(20) NOT NULL, -- visitor, campaign, cohort
+    target_id UUID,
+    
+    -- Prediction data
+    predicted_value DECIMAL(12, 4),
+    confidence_interval_low DECIMAL(12, 4),
+    confidence_interval_high DECIMAL(12, 4),
+    confidence_score INTEGER, -- 0-100
+    
+    -- Model info
+    model_version VARCHAR(20),
+    features_used JSONB DEFAULT '[]',
+    
+    -- Outcome tracking
+    actual_value DECIMAL(12, 4),
+    prediction_accurate BOOLEAN,
+    
+    -- Timestamps
+    prediction_date DATE DEFAULT CURRENT_DATE,
+    expires_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+ALTER TABLE predictions DISABLE ROW LEVEL SECURITY;
+GRANT ALL ON predictions TO anon;
+GRANT ALL ON predictions TO authenticated;
+GRANT ALL ON predictions TO service_role;
+
+CREATE INDEX idx_predictions_type ON predictions(prediction_type);
+CREATE INDEX idx_predictions_target ON predictions(target_type, target_id);
+CREATE INDEX idx_predictions_date ON predictions(prediction_date);
+
+-- ----------------------------------------
+-- WEBHOOK_LOGS TABLE
 -- Logs incoming/outgoing webhooks
--- ============================================
-DROP TABLE IF EXISTS webhook_logs CASCADE;
+-- ----------------------------------------
 CREATE TABLE webhook_logs (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     
@@ -389,73 +558,59 @@ CREATE TABLE webhook_logs (
     payload JSONB DEFAULT '{}',
     response_status INTEGER,
     response_body TEXT,
+    response_time_ms INTEGER,
     
     -- Metadata
-    source VARCHAR(100), -- shopify, klaviyo, zapier, etc.
+    source VARCHAR(100), -- shopify, stripe, klaviyo, zapier, etc.
     event_type VARCHAR(100),
+    
+    -- Retry tracking
+    attempt_number INTEGER DEFAULT 1,
+    max_attempts INTEGER DEFAULT 3,
+    next_retry_at TIMESTAMP WITH TIME ZONE,
     
     -- Timestamps
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- DISABLE RLS on webhook_logs
 ALTER TABLE webhook_logs DISABLE ROW LEVEL SECURITY;
-
--- Grant full access
 GRANT ALL ON webhook_logs TO anon;
 GRANT ALL ON webhook_logs TO authenticated;
 GRANT ALL ON webhook_logs TO service_role;
 
-CREATE INDEX IF NOT EXISTS idx_webhook_logs_source ON webhook_logs(source);
-CREATE INDEX IF NOT EXISTS idx_webhook_logs_created ON webhook_logs(created_at);
+CREATE INDEX idx_webhook_source ON webhook_logs(source);
+CREATE INDEX idx_webhook_event ON webhook_logs(event_type);
+CREATE INDEX idx_webhook_created ON webhook_logs(created_at);
 
--- ============================================
--- 8. SETTINGS TABLE (NEW - Store account settings)
--- ============================================
-DROP TABLE IF EXISTS settings CASCADE;
+-- ----------------------------------------
+-- SETTINGS TABLE
+-- Store account/workspace settings
+-- ----------------------------------------
 CREATE TABLE settings (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    account_id VARCHAR(100) UNIQUE NOT NULL,
-    
-    -- Meta/Facebook settings
-    meta_pixel_id VARCHAR(100),
-    meta_capi_token TEXT,
-    meta_test_code VARCHAR(50),
-    
-    -- Google Ads settings
-    google_customer_id VARCHAR(50),
-    google_conversion_id VARCHAR(100),
-    google_conversion_label VARCHAR(100),
-    google_developer_token TEXT,
-    
-    -- CNAME/First-party domain settings
-    tracking_domain VARCHAR(255), -- e.g., track.yourdomain.com
-    tracking_domain_verified BOOLEAN DEFAULT FALSE,
-    
-    -- Webhook settings
-    webhook_secret VARCHAR(100),
-    webhook_endpoints JSONB DEFAULT '[]',
-    
-    -- Data retention
-    data_retention_days INTEGER DEFAULT 365,
-    
-    -- Timestamps
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    key VARCHAR(100) UNIQUE NOT NULL,
+    value JSONB NOT NULL,
+    description TEXT,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- DISABLE RLS on settings
 ALTER TABLE settings DISABLE ROW LEVEL SECURITY;
-
--- Grant full access
 GRANT ALL ON settings TO anon;
 GRANT ALL ON settings TO authenticated;
 GRANT ALL ON settings TO service_role;
 
-CREATE INDEX IF NOT EXISTS idx_settings_account ON settings(account_id);
+CREATE INDEX idx_settings_key ON settings(key);
+
+-- Insert default settings
+INSERT INTO settings (key, value, description) VALUES
+('workspace', '{"name": "My Workspace", "timezone": "UTC", "currency": "USD"}', 'Workspace configuration'),
+('tracking_domain', '{"domain": null, "verified": false}', 'Custom tracking domain (CNAME)'),
+('data_retention', '{"days": 365}', 'How long to keep visitor data'),
+('privacy', '{"hash_pii": true, "anonymize_ip": false}', 'Privacy settings');
 
 -- ============================================
--- HELPER FUNCTIONS
+-- STEP 3: CREATE HELPER FUNCTIONS & TRIGGERS
 -- ============================================
 
 -- Function to update visitor's last_seen timestamp
@@ -463,7 +618,8 @@ CREATE OR REPLACE FUNCTION update_visitor_last_seen()
 RETURNS TRIGGER AS $$
 BEGIN
     UPDATE visitors 
-    SET last_seen = NOW(), 
+    SET 
+        last_seen = NOW(), 
         total_events = total_events + 1,
         updated_at = NOW()
     WHERE fingerprint_id = NEW.fingerprint_id;
@@ -471,8 +627,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Trigger to auto-update visitor on new event
-DROP TRIGGER IF EXISTS trigger_update_visitor_on_event ON events;
+-- Trigger for visitor update on new event
 CREATE TRIGGER trigger_update_visitor_on_event
     AFTER INSERT ON events
     FOR EACH ROW
@@ -488,34 +643,52 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Triggers for updated_at
-DROP TRIGGER IF EXISTS trigger_visitors_updated ON visitors;
 CREATE TRIGGER trigger_visitors_updated
     BEFORE UPDATE ON visitors
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at();
 
-DROP TRIGGER IF EXISTS trigger_conversions_updated ON conversions;
 CREATE TRIGGER trigger_conversions_updated
     BEFORE UPDATE ON conversions
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at();
 
-DROP TRIGGER IF EXISTS trigger_settings_updated ON settings;
-CREATE TRIGGER trigger_settings_updated
-    BEFORE UPDATE ON settings
-    FOR EACH ROW
-    EXECUTE FUNCTION update_updated_at();
-
 -- ============================================
--- REALTIME SUBSCRIPTIONS (Enable for live updates)
+-- STEP 4: ENABLE REALTIME SUBSCRIPTIONS
+-- (For live dashboard updates)
 -- ============================================
 
--- Enable realtime for events table (for live dashboard)
-ALTER PUBLICATION supabase_realtime ADD TABLE events;
-ALTER PUBLICATION supabase_realtime ADD TABLE conversions;
+-- Add tables to realtime publication
+DO $$
+BEGIN
+    -- Check if publication exists before adding
+    IF EXISTS (SELECT 1 FROM pg_publication WHERE pubname = 'supabase_realtime') THEN
+        ALTER PUBLICATION supabase_realtime ADD TABLE events;
+        ALTER PUBLICATION supabase_realtime ADD TABLE conversions;
+        ALTER PUBLICATION supabase_realtime ADD TABLE visitors;
+        ALTER PUBLICATION supabase_realtime ADD TABLE fraud_signals;
+    END IF;
+EXCEPTION WHEN OTHERS THEN
+    -- Ignore errors if tables already in publication
+    NULL;
+END $$;
 
 -- ============================================
--- DONE! Your database is ready.
--- RLS is DISABLED - suitable for server-side use.
--- For client-side access, use your anon key.
+-- DONE! DATABASE READY FOR USE
+-- ============================================
+-- 
+-- Next steps:
+-- 1. Copy your Project URL from Settings → API
+--    Example: https://abcdefgh.supabase.co
+-- 
+-- 2. Copy your anon/public key from Settings → API
+--    Example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+-- 
+-- 3. Enter these in Chronos AI Settings page
+-- 
+-- 4. (Optional) Set up CNAME tracking domain for
+--    first-party tracking
+--
+-- IMPORTANT: RLS is disabled. For production, secure
+-- your anon key or use a backend proxy.
 -- ============================================
