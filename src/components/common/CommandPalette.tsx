@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useApp } from '../../contexts/AppContext';
 import { Search } from 'lucide-react';
 import { MOCK_JOURNEYS } from '../../services/mockData';
-import { NAV_ITEMS } from '@/constants';
+import { NAV_ITEMS } from '../../../constants';
 
 export const CommandPalette: React.FC = () => {
     const { setCmdkOpen, setCurrentView } = useApp();
