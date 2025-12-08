@@ -10,6 +10,7 @@ import { IdentityGraph } from './components/IdentityGraph';
 import { OfflineConversionsHub } from './components/OfflineConversionsHub';
 import { OnboardingWizard } from './components/OnboardingWizard';
 import { DataSources } from './components/DataSources';
+import { SetupGuide } from './components/SetupGuide';
 import { Toast } from './components/common/Toast';
 import { CommandPalette } from './components/common/CommandPalette';
 import { UserProfile } from './components/common/UserProfile';
@@ -30,6 +31,7 @@ const AppContent: React.FC = () => {
       case 'offline': return <OfflineConversionsHub />;
       case 'attribution': return <AttributionModeler campaigns={MOCK_CAMPAIGNS} journeys={MOCK_JOURNEYS} />;
       case 'datasources': return <DataSources />;
+      case 'setup': return <SetupGuide />;
       case 'settings': return <AttributionSettings />;
       default: return <Dashboard campaigns={MOCK_CAMPAIGNS} />;
     }
