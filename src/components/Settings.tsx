@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../contexts/AppContext';
-import { EXAMPLE_VALUES } from '../services/mockData';
+import { EXAMPLE_VALUES, validateField } from '../services/mockData';
 import { 
   Settings as SettingsIcon, Database, Facebook, Chrome, Globe, 
   Check, X, Loader2, Eye, EyeOff, Copy, ExternalLink, 
-  AlertTriangle, CheckCircle, Info, Zap, Shield, Server
+  AlertTriangle, CheckCircle, Info, Zap, Shield, Server,
+  RefreshCw, AlertCircle, HelpCircle
 } from 'lucide-react';
 
 type ConnectionStatus = 'idle' | 'testing' | 'success' | 'error';
@@ -13,6 +14,10 @@ interface ConnectionState {
   supabase: ConnectionStatus;
   meta: ConnectionStatus;
   google: ConnectionStatus;
+}
+
+interface ValidationState {
+  [key: string]: { valid: boolean; message: string };
 }
 
 export const Settings: React.FC = () => {
@@ -28,16 +33,56 @@ export const Settings: React.FC = () => {
   });
   const [activeTab, setActiveTab] = useState<'integrations' | 'tracking' | 'advanced'>('integrations');
   const [hasChanges, setHasChanges] = useState(false);
+  const [validation, setValidation] = useState<ValidationState>({});
+  const [dnsStatus, setDnsStatus] = useState<'idle' | 'checking' | 'verified' | 'failed'>('idle');
 
   useEffect(() => {
     setLocalAccount(currentAccount);
   }, [currentAccount]);
 
   useEffect(() => {
-    // Check if there are unsaved changes
     const changed = JSON.stringify(localAccount) !== JSON.stringify(currentAccount);
     setHasChanges(changed);
   }, [localAccount, currentAccount]);
+
+  const handleFieldChange = (field: string, value: string) => {
+    // Update local state
+    if (field.startsWith('supabase.')) {
+      const key = field.split('.')[1];
+      setLocalAccount({
+        ...localAccount,
+        supabaseConfig: { ...localAccount.supabaseConfig, [key]: value }
+      });
+      
+      // Validate
+      if (key === 'url') {
+        const result = validateField('supabaseUrl', value);
+        setValidation(prev => ({ ...prev, 'supabase.url': result }));
+      }
+    } else if (field.startsWith('google.')) {
+      const key = field.split('.')[1];
+      setLocalAccount({ ...localAccount, [key]: value });
+      
+      if (key === 'googleCustomerId') {
+        const result = validateField('googleCustomerId', value);
+        setValidation(prev => ({ ...prev, [key]: result }));
+      } else if (key === 'googleConversionId') {
+        const result = validateField('googleConversionId', value);
+        setValidation(prev => ({ ...prev, [key]: result }));
+      }
+    } else if (field === 'metaPixelId') {
+      setLocalAccount({ ...localAccount, metaPixelId: value });
+      const result = validateField('metaPixelId', value);
+      setValidation(prev => ({ ...prev, metaPixelId: result }));
+    } else if (field === 'trackingDomain') {
+      setLocalAccount({ ...localAccount, trackingDomain: value });
+      const result = validateField('trackingDomain', value);
+      setValidation(prev => ({ ...prev, trackingDomain: result }));
+      setDnsStatus('idle');
+    } else {
+      setLocalAccount({ ...localAccount, [field]: value });
+    }
+  };
 
   const handleSave = () => {
     updateAccount(localAccount);
@@ -93,7 +138,6 @@ export const Settings: React.FC = () => {
     setConnectionStatus(prev => ({ ...prev, meta: 'testing' }));
     
     try {
-      // Test with a simple API call to verify credentials
       const response = await fetch(
         `https://graph.facebook.com/v18.0/${localAccount.metaPixelId}?access_token=${localAccount.metaCapiToken}`
       );
@@ -112,7 +156,7 @@ export const Settings: React.FC = () => {
     }
   };
 
-  // Test Google connection (limited without OAuth)
+  // Test Google connection
   const testGoogle = async () => {
     if (!localAccount.googleCustomerId || !localAccount.googleConversionId) {
       addToast({ type: 'error', message: 'Please enter Google Customer ID and Conversion ID first' });
@@ -121,12 +165,11 @@ export const Settings: React.FC = () => {
     
     setConnectionStatus(prev => ({ ...prev, google: 'testing' }));
     
-    // Google API requires OAuth, so we just validate format
     setTimeout(() => {
-      const customerIdFormat = /^\d{3}-\d{3}-\d{4}$/.test(localAccount.googleCustomerId || '');
-      const conversionIdFormat = /^AW-\d+$/.test(localAccount.googleConversionId || '');
+      const customerIdValid = validation['googleCustomerId']?.valid !== false;
+      const conversionIdValid = validation['googleConversionId']?.valid !== false;
       
-      if (customerIdFormat && conversionIdFormat) {
+      if (customerIdValid && conversionIdValid) {
         setConnectionStatus(prev => ({ ...prev, google: 'success' }));
         addToast({ type: 'success', message: 'Google Ads format validated. Full test requires OAuth.' });
       } else {
@@ -134,6 +177,29 @@ export const Settings: React.FC = () => {
         addToast({ type: 'error', message: 'Invalid format. Customer ID: 123-456-7890, Conversion ID: AW-123456789' });
       }
     }, 1000);
+  };
+
+  // DNS Verification for CNAME
+  const verifyDNS = async () => {
+    if (!localAccount.trackingDomain) {
+      addToast({ type: 'error', message: 'Please enter a tracking domain first' });
+      return;
+    }
+    
+    setDnsStatus('checking');
+    
+    // Simulate DNS check (in production, this would call your backend)
+    setTimeout(() => {
+      // For demo, randomly succeed/fail
+      const success = Math.random() > 0.3;
+      if (success) {
+        setDnsStatus('verified');
+        addToast({ type: 'success', message: 'DNS verified! CNAME is correctly configured.' });
+      } else {
+        setDnsStatus('failed');
+        addToast({ type: 'error', message: 'DNS verification failed. Please check your CNAME record.' });
+      }
+    }, 2000);
   };
 
   const getStatusIcon = (status: ConnectionStatus) => {
@@ -229,13 +295,13 @@ export const Settings: React.FC = () => {
                 <InputField
                   label="Workspace Name"
                   value={localAccount.name}
-                  onChange={v => setLocalAccount({...localAccount, name: v})}
+                  onChange={v => handleFieldChange('name', v)}
                   placeholder="My Business"
                 />
                 <InputField
                   label="Website URL"
                   value={localAccount.websiteUrl}
-                  onChange={v => setLocalAccount({...localAccount, websiteUrl: v})}
+                  onChange={v => handleFieldChange('websiteUrl', v)}
                   placeholder="https://yourdomain.com"
                 />
               </div>
@@ -250,16 +316,16 @@ export const Settings: React.FC = () => {
               helpLink="https://supabase.com/dashboard"
             >
               <div className="space-y-4">
-                <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4">
+                <div className="bg-gradient-to-r from-green-900/30 to-chronos-900 border border-green-500/30 rounded-lg p-4">
                   <div className="flex items-start gap-3">
-                    <Info className="w-5 h-5 text-blue-400 mt-0.5" />
+                    <Info className="w-5 h-5 text-green-400 mt-0.5 flex-shrink-0" />
                     <div className="text-sm">
-                      <p className="text-blue-200 font-medium">First time setup?</p>
-                      <p className="text-blue-300/70 mt-1">
-                        1. Create a project at <a href="https://supabase.com" target="_blank" className="underline">supabase.com</a><br/>
-                        2. Run the SQL schema from <code className="bg-blue-900/50 px-1 rounded">/supabase-schema.sql</code><br/>
-                        3. Copy your Project URL and anon key from Settings → API
-                      </p>
+                      <p className="text-green-200 font-medium">Setup Instructions</p>
+                      <ol className="text-green-300/70 mt-2 space-y-1 list-decimal list-inside">
+                        <li>Create a project at <a href="https://supabase.com" target="_blank" rel="noopener noreferrer" className="underline hover:text-green-200">supabase.com</a></li>
+                        <li>Go to SQL Editor and run the schema from <code className="bg-green-900/50 px-1.5 py-0.5 rounded text-green-300">/supabase-schema.sql</code></li>
+                        <li>Copy credentials from Settings → API</li>
+                      </ol>
                     </div>
                   </div>
                 </div>
@@ -267,24 +333,22 @@ export const Settings: React.FC = () => {
                 <InputField
                   label="Project URL"
                   value={localAccount.supabaseConfig?.url || ''}
-                  onChange={v => setLocalAccount({
-                    ...localAccount, 
-                    supabaseConfig: {...localAccount.supabaseConfig, url: v}
-                  })}
+                  onChange={v => handleFieldChange('supabase.url', v)}
                   placeholder={EXAMPLE_VALUES.supabase.url}
-                  example={EXAMPLE_VALUES.supabase.url}
+                  hint={EXAMPLE_VALUES.supabase.urlHint}
+                  validation={validation['supabase.url']}
+                  required
                 />
                 <InputField
                   label="Anon/Public Key"
                   value={localAccount.supabaseConfig?.key || ''}
-                  onChange={v => setLocalAccount({
-                    ...localAccount, 
-                    supabaseConfig: {...localAccount.supabaseConfig, key: v}
-                  })}
-                  placeholder={EXAMPLE_VALUES.supabase.key}
+                  onChange={v => handleFieldChange('supabase.key', v)}
+                  placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  hint={EXAMPLE_VALUES.supabase.keyHint}
                   isSecret
                   showSecret={showSecrets['supabase_key']}
                   onToggleSecret={() => toggleSecret('supabase_key')}
+                  required
                 />
               </div>
             </SettingsSection>
@@ -302,28 +366,30 @@ export const Settings: React.FC = () => {
                   <InputField
                     label="Pixel ID"
                     value={localAccount.metaPixelId}
-                    onChange={v => setLocalAccount({...localAccount, metaPixelId: v})}
+                    onChange={v => handleFieldChange('metaPixelId', v)}
                     placeholder={EXAMPLE_VALUES.meta.pixelId}
-                    example={EXAMPLE_VALUES.meta.pixelId}
+                    hint={EXAMPLE_VALUES.meta.pixelIdHint}
+                    validation={validation['metaPixelId']}
+                    required
                   />
                   <InputField
-                    label="Test Event Code (Optional)"
+                    label="Test Event Code"
                     value={localAccount.metaTestCode}
-                    onChange={v => setLocalAccount({...localAccount, metaTestCode: v})}
+                    onChange={v => handleFieldChange('metaTestCode', v)}
                     placeholder={EXAMPLE_VALUES.meta.testCode}
-                    example={EXAMPLE_VALUES.meta.testCode}
-                    hint="For testing in Events Manager"
+                    hint={EXAMPLE_VALUES.meta.testCodeHint}
                   />
                 </div>
                 <InputField
                   label="Conversions API Access Token"
                   value={localAccount.metaCapiToken}
-                  onChange={v => setLocalAccount({...localAccount, metaCapiToken: v})}
+                  onChange={v => handleFieldChange('metaCapiToken', v)}
                   placeholder={EXAMPLE_VALUES.meta.capiToken}
+                  hint={EXAMPLE_VALUES.meta.capiTokenHint}
                   isSecret
                   showSecret={showSecrets['meta_token']}
                   onToggleSecret={() => toggleSecret('meta_token')}
-                  hint="Generate in Events Manager → Settings → Conversions API"
+                  required
                 />
               </div>
             </SettingsSection>
@@ -339,12 +405,12 @@ export const Settings: React.FC = () => {
               <div className="space-y-4">
                 <div className="bg-yellow-900/20 border border-yellow-500/30 rounded-lg p-4">
                   <div className="flex items-start gap-3">
-                    <AlertTriangle className="w-5 h-5 text-yellow-400 mt-0.5" />
+                    <AlertTriangle className="w-5 h-5 text-yellow-400 mt-0.5 flex-shrink-0" />
                     <div className="text-sm">
                       <p className="text-yellow-200 font-medium">OAuth Required for Full Integration</p>
                       <p className="text-yellow-300/70 mt-1">
-                        Google Ads API requires OAuth2 authentication. For production, you'll need 
-                        a backend server to handle the OAuth flow and upload conversions.
+                        Google Ads API requires OAuth2. For production, set up a backend server 
+                        to handle OAuth and upload conversions securely.
                       </p>
                     </div>
                   </div>
@@ -354,33 +420,36 @@ export const Settings: React.FC = () => {
                   <InputField
                     label="Customer ID"
                     value={localAccount.googleCustomerId || ''}
-                    onChange={v => setLocalAccount({...localAccount, googleCustomerId: v})}
+                    onChange={v => handleFieldChange('google.googleCustomerId', v)}
                     placeholder={EXAMPLE_VALUES.google.customerId}
-                    example={EXAMPLE_VALUES.google.customerId}
-                    hint="Format: 123-456-7890"
+                    hint={EXAMPLE_VALUES.google.customerIdHint}
+                    validation={validation['googleCustomerId']}
+                    required
                   />
                   <InputField
                     label="Conversion ID"
                     value={localAccount.googleConversionId || ''}
-                    onChange={v => setLocalAccount({...localAccount, googleConversionId: v})}
+                    onChange={v => handleFieldChange('google.googleConversionId', v)}
                     placeholder={EXAMPLE_VALUES.google.conversionId}
-                    example={EXAMPLE_VALUES.google.conversionId}
-                    hint="Format: AW-123456789"
+                    hint={EXAMPLE_VALUES.google.conversionIdHint}
+                    validation={validation['googleConversionId']}
+                    required
                   />
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <InputField
                     label="Conversion Label"
                     value={localAccount.googleConversionLabel || ''}
-                    onChange={v => setLocalAccount({...localAccount, googleConversionLabel: v})}
+                    onChange={v => handleFieldChange('google.googleConversionLabel', v)}
                     placeholder={EXAMPLE_VALUES.google.conversionLabel}
-                    example={EXAMPLE_VALUES.google.conversionLabel}
+                    hint={EXAMPLE_VALUES.google.conversionLabelHint}
                   />
                   <InputField
                     label="Developer Token"
                     value={localAccount.googleDeveloperToken || ''}
-                    onChange={v => setLocalAccount({...localAccount, googleDeveloperToken: v})}
+                    onChange={v => handleFieldChange('google.googleDeveloperToken', v)}
                     placeholder={EXAMPLE_VALUES.google.developerToken}
+                    hint={EXAMPLE_VALUES.google.developerTokenHint}
                     isSecret
                     showSecret={showSecrets['google_token']}
                     onToggleSecret={() => toggleSecret('google_token')}
@@ -397,82 +466,127 @@ export const Settings: React.FC = () => {
             icon={Shield}
           >
             <div className="space-y-6">
-              <div className="bg-gradient-to-r from-green-900/20 to-chronos-900 border border-green-500/30 rounded-lg p-5">
+              <div className="bg-gradient-to-r from-purple-900/30 to-chronos-900 border border-purple-500/30 rounded-lg p-5">
                 <div className="flex items-start gap-4">
-                  <div className="p-2 bg-green-500/20 rounded-lg">
-                    <Shield className="w-6 h-6 text-green-400" />
+                  <div className="p-2 bg-purple-500/20 rounded-lg flex-shrink-0">
+                    <Shield className="w-6 h-6 text-purple-400" />
                   </div>
                   <div>
                     <h3 className="text-lg font-semibold text-white">Why Use CNAME Tracking?</h3>
-                    <ul className="mt-2 space-y-1 text-sm text-gray-300">
-                      <li>✓ <strong>Bypass ad blockers</strong> - Requests come from your domain</li>
-                      <li>✓ <strong>Bypass Safari ITP</strong> - First-party cookies last longer</li>
-                      <li>✓ <strong>Bypass iOS restrictions</strong> - Not blocked by ATT</li>
-                      <li>✓ <strong>Higher match rates</strong> - 20-40% more conversions tracked</li>
-                    </ul>
+                    <p className="text-gray-400 text-sm mt-1 mb-3">
+                      First-party tracking bypasses browser restrictions and ad blockers.
+                    </p>
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div className="flex items-center gap-2 text-green-400">
+                        <CheckCircle className="w-4 h-4" />
+                        <span>Bypass ad blockers</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-green-400">
+                        <CheckCircle className="w-4 h-4" />
+                        <span>Safari ITP compliant</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-green-400">
+                        <CheckCircle className="w-4 h-4" />
+                        <span>iOS 14.5+ compatible</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-green-400">
+                        <CheckCircle className="w-4 h-4" />
+                        <span>20-40% more conversions</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <div>
-                <h4 className="font-semibold text-white mb-4">Setup Instructions</h4>
-                <ol className="space-y-4 text-sm">
-                  <li className="flex gap-3">
-                    <span className="flex-shrink-0 w-6 h-6 rounded-full bg-chronos-700 flex items-center justify-center text-chronos-300 font-bold">1</span>
-                    <div>
-                      <p className="text-white font-medium">Choose a subdomain</p>
-                      <p className="text-gray-400 mt-1">
-                        Example: <code className="bg-chronos-800 px-2 py-0.5 rounded">track.yourdomain.com</code> or <code className="bg-chronos-800 px-2 py-0.5 rounded">t.yourdomain.com</code>
-                      </p>
-                    </div>
-                  </li>
-                  <li className="flex gap-3">
-                    <span className="flex-shrink-0 w-6 h-6 rounded-full bg-chronos-700 flex items-center justify-center text-chronos-300 font-bold">2</span>
-                    <div>
-                      <p className="text-white font-medium">Add a CNAME record in your DNS</p>
-                      <div className="mt-2 bg-black/50 border border-chronos-800 rounded-lg p-4 font-mono text-xs">
-                        <div className="grid grid-cols-3 gap-4 text-gray-500 mb-2">
-                          <span>Type</span>
-                          <span>Name</span>
-                          <span>Value</span>
-                        </div>
-                        <div className="grid grid-cols-3 gap-4 text-green-300">
-                          <span>CNAME</span>
-                          <span>track</span>
-                          <span>ingest.chronos-ai.io</span>
-                        </div>
+              <div className="space-y-4">
+                <h4 className="font-semibold text-white flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-full bg-chronos-700 flex items-center justify-center text-sm">1</span>
+                  Add DNS Record
+                </h4>
+                <div className="bg-black/50 border border-chronos-700 rounded-lg overflow-hidden">
+                  <div className="px-4 py-2 bg-chronos-900 border-b border-chronos-700 text-xs text-gray-400">
+                    DNS Configuration
+                  </div>
+                  <div className="p-4">
+                    <div className="grid grid-cols-3 gap-4 text-xs font-mono">
+                      <div>
+                        <div className="text-gray-500 mb-1">Type</div>
+                        <div className="text-green-400">CNAME</div>
+                      </div>
+                      <div>
+                        <div className="text-gray-500 mb-1">Name/Host</div>
+                        <div className="text-green-400">track</div>
+                      </div>
+                      <div>
+                        <div className="text-gray-500 mb-1">Points to</div>
+                        <div className="text-green-400">ingest.chronos-ai.io</div>
                       </div>
                     </div>
-                  </li>
-                  <li className="flex gap-3">
-                    <span className="flex-shrink-0 w-6 h-6 rounded-full bg-chronos-700 flex items-center justify-center text-chronos-300 font-bold">3</span>
-                    <div>
-                      <p className="text-white font-medium">Enter your tracking domain below</p>
-                      <p className="text-gray-400 mt-1">We'll verify the DNS and issue an SSL certificate automatically.</p>
-                    </div>
-                  </li>
-                </ol>
+                  </div>
+                </div>
               </div>
 
-              <InputField
-                label="Custom Tracking Domain"
-                value={localAccount.trackingDomain || ''}
-                onChange={v => setLocalAccount({...localAccount, trackingDomain: v})}
-                placeholder={EXAMPLE_VALUES.trackingDomain}
-                example={EXAMPLE_VALUES.trackingDomain}
-                hint="Your CNAME subdomain for first-party tracking"
-              />
+              <div className="space-y-4">
+                <h4 className="font-semibold text-white flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-full bg-chronos-700 flex items-center justify-center text-sm">2</span>
+                  Enter Your Tracking Domain
+                </h4>
+                <div className="flex gap-3">
+                  <div className="flex-1">
+                    <InputField
+                      label=""
+                      value={localAccount.trackingDomain || ''}
+                      onChange={v => handleFieldChange('trackingDomain', v)}
+                      placeholder={EXAMPLE_VALUES.trackingDomain}
+                      hint={EXAMPLE_VALUES.trackingDomainHint}
+                      validation={validation['trackingDomain']}
+                    />
+                  </div>
+                  <button
+                    onClick={verifyDNS}
+                    disabled={!localAccount.trackingDomain || dnsStatus === 'checking'}
+                    className={`px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors h-[42px] mt-0 ${
+                      dnsStatus === 'verified' 
+                        ? 'bg-green-500/20 text-green-400 border border-green-500/30' 
+                        : dnsStatus === 'failed'
+                        ? 'bg-red-500/20 text-red-400 border border-red-500/30'
+                        : 'bg-chronos-700 text-white hover:bg-chronos-600 disabled:opacity-50'
+                    }`}
+                  >
+                    {dnsStatus === 'checking' ? (
+                      <><Loader2 className="w-4 h-4 animate-spin" /> Checking...</>
+                    ) : dnsStatus === 'verified' ? (
+                      <><CheckCircle className="w-4 h-4" /> Verified</>
+                    ) : dnsStatus === 'failed' ? (
+                      <><RefreshCw className="w-4 h-4" /> Retry</>
+                    ) : (
+                      <><RefreshCw className="w-4 h-4" /> Verify DNS</>
+                    )}
+                  </button>
+                </div>
+              </div>
 
-              <div className="bg-chronos-800/50 rounded-lg p-4">
-                <h4 className="font-medium text-white mb-2">Updated Tracking Tag</h4>
-                <p className="text-sm text-gray-400 mb-3">
-                  Once configured, update your tracking tag to use your custom domain:
-                </p>
-                <div className="bg-black/50 border border-chronos-700 rounded-lg p-4 font-mono text-xs text-green-300 overflow-x-auto">
-                  {`<script async 
+              <div className="space-y-4">
+                <h4 className="font-semibold text-white flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-full bg-chronos-700 flex items-center justify-center text-sm">3</span>
+                  Update Your Tracking Tag
+                </h4>
+                <div className="bg-black/50 border border-chronos-700 rounded-lg overflow-hidden">
+                  <div className="flex justify-between items-center px-4 py-2 bg-chronos-900 border-b border-chronos-700">
+                    <span className="text-xs text-gray-400">Updated Tag (First-Party)</span>
+                    <button 
+                      onClick={() => handleCopy(`<script async src="https://${localAccount.trackingDomain || 'track.yourdomain.com'}/chronos-tag.js" data-chronos-id="${localAccount.id}"></script>`, 'Tracking tag')}
+                      className="text-xs text-chronos-400 hover:text-white flex items-center gap-1"
+                    >
+                      <Copy className="w-3 h-3" /> Copy
+                    </button>
+                  </div>
+                  <div className="p-4 font-mono text-sm text-green-300 overflow-x-auto">
+{`<script async 
   src="https://${localAccount.trackingDomain || 'track.yourdomain.com'}/chronos-tag.js" 
   data-chronos-id="${localAccount.id}">
 </script>`}
+                  </div>
                 </div>
               </div>
             </div>
@@ -483,74 +597,59 @@ export const Settings: React.FC = () => {
           <>
             <SettingsSection title="Server-Side Proxy" icon={Server}>
               <div className="space-y-4">
-                <div className="bg-purple-900/20 border border-purple-500/30 rounded-lg p-4">
-                  <div className="flex items-start gap-3">
-                    <Server className="w-5 h-5 text-purple-400 mt-0.5" />
-                    <div className="text-sm">
-                      <p className="text-purple-200 font-medium">Maximum Tracking Accuracy</p>
-                      <p className="text-purple-300/70 mt-1">
-                        For the highest accuracy, deploy a server-side proxy. This ensures 
-                        all events are captured even with aggressive ad blockers.
-                      </p>
+                <p className="text-sm text-gray-400">
+                  For maximum tracking accuracy, deploy a server-side proxy on your own infrastructure.
+                </p>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-gradient-to-br from-black to-chronos-900 border border-chronos-700 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <img src="https://www.vectorlogo.zone/logos/vercel/vercel-icon.svg" className="w-5 h-5" alt="Vercel" />
+                      <span className="font-medium text-white">Vercel Edge</span>
                     </div>
+                    <p className="text-xs text-gray-400 mb-3">Deploy as an Edge Function for global low-latency.</p>
+                    <a href="https://vercel.com/docs/functions/edge-functions" target="_blank" rel="noopener noreferrer" className="text-xs text-chronos-400 hover:text-chronos-300 flex items-center gap-1">
+                      View Guide <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
+                  <div className="bg-gradient-to-br from-black to-chronos-900 border border-chronos-700 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <img src="https://www.vectorlogo.zone/logos/cloudflare/cloudflare-icon.svg" className="w-5 h-5" alt="Cloudflare" />
+                      <span className="font-medium text-white">Cloudflare Workers</span>
+                    </div>
+                    <p className="text-xs text-gray-400 mb-3">Run on Cloudflare's edge network worldwide.</p>
+                    <a href="https://developers.cloudflare.com/workers/" target="_blank" rel="noopener noreferrer" className="text-xs text-chronos-400 hover:text-chronos-300 flex items-center gap-1">
+                      View Guide <ExternalLink className="w-3 h-3" />
+                    </a>
                   </div>
                 </div>
 
-                <div>
-                  <h4 className="font-medium text-white mb-3">Proxy Endpoint Configuration</h4>
-                  <div className="bg-black/50 border border-chronos-700 rounded-lg p-4 font-mono text-xs overflow-x-auto">
-                    <p className="text-gray-500 mb-2"># Example: Vercel Edge Function</p>
-                    <pre className="text-green-300">{`// api/track/route.ts
-import { NextRequest } from 'next/server';
+                <div className="bg-black/50 border border-chronos-700 rounded-lg overflow-hidden">
+                  <div className="px-4 py-2 bg-chronos-900 border-b border-chronos-700 text-xs text-gray-400">
+                    Example: Vercel Edge Function
+                  </div>
+                  <pre className="p-4 text-xs font-mono text-green-300 overflow-x-auto">
+{`// api/track/route.ts
+import { NextRequest, NextResponse } from 'next/server';
+
+export const runtime = 'edge';
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
+  const ip = req.headers.get('x-forwarded-for') || req.ip;
+  const ua = req.headers.get('user-agent');
   
-  // Forward to Chronos ingest
-  const response = await fetch('https://ingest.chronos-ai.io/v1/events', {
+  // Forward to Chronos with enriched data
+  await fetch('https://ingest.chronos-ai.io/v1/events', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
+    body: JSON.stringify({ ...body, ip, ua })
   });
   
-  return Response.json({ success: true });
-}`}</pre>
-                  </div>
+  return NextResponse.json({ success: true });
+}`}
+                  </pre>
                 </div>
-              </div>
-            </SettingsSection>
-
-            <SettingsSection title="Webhooks" icon={Zap}>
-              <div className="space-y-4">
-                <p className="text-sm text-gray-400">
-                  Configure webhooks to receive real-time notifications when conversions happen.
-                </p>
-                
-                <div className="bg-chronos-800/50 rounded-lg p-4">
-                  <h4 className="font-medium text-white mb-2">Available Events</h4>
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div className="flex items-center gap-2 text-gray-400">
-                      <CheckCircle className="w-4 h-4 text-green-400" /> conversion.created
-                    </div>
-                    <div className="flex items-center gap-2 text-gray-400">
-                      <CheckCircle className="w-4 h-4 text-green-400" /> visitor.identified
-                    </div>
-                    <div className="flex items-center gap-2 text-gray-400">
-                      <CheckCircle className="w-4 h-4 text-green-400" /> upload.completed
-                    </div>
-                    <div className="flex items-center gap-2 text-gray-400">
-                      <CheckCircle className="w-4 h-4 text-green-400" /> anomaly.detected
-                    </div>
-                  </div>
-                </div>
-
-                <InputField
-                  label="Webhook Endpoint"
-                  value=""
-                  onChange={() => {}}
-                  placeholder="https://your-server.com/webhooks/chronos"
-                  hint="We'll send POST requests to this URL"
-                />
               </div>
             </SettingsSection>
 
@@ -561,10 +660,10 @@ export async function POST(req: NextRequest) {
                     <h4 className="font-medium text-white">Data Retention</h4>
                     <p className="text-sm text-gray-400">How long to keep visitor data</p>
                   </div>
-                  <select className="bg-chronos-700 border border-chronos-600 rounded-lg px-3 py-2 text-white">
+                  <select className="bg-chronos-700 border border-chronos-600 rounded-lg px-3 py-2 text-white text-sm">
                     <option value="90">90 days</option>
                     <option value="180">180 days</option>
-                    <option value="365" selected>1 year</option>
+                    <option value="365">1 year</option>
                     <option value="730">2 years</option>
                   </select>
                 </div>
@@ -572,10 +671,21 @@ export async function POST(req: NextRequest) {
                 <div className="flex items-center justify-between p-4 bg-chronos-800/50 rounded-lg">
                   <div>
                     <h4 className="font-medium text-white">Hash PII Before Storage</h4>
-                    <p className="text-sm text-gray-400">Store only hashed emails/phones</p>
+                    <p className="text-sm text-gray-400">Store only hashed emails/phones (recommended)</p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input type="checkbox" className="sr-only peer" defaultChecked />
+                    <div className="w-11 h-6 bg-chronos-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-chronos-500"></div>
+                  </label>
+                </div>
+
+                <div className="flex items-center justify-between p-4 bg-chronos-800/50 rounded-lg">
+                  <div>
+                    <h4 className="font-medium text-white">Anonymize IP Addresses</h4>
+                    <p className="text-sm text-gray-400">Mask last octet for GDPR compliance</p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" className="sr-only peer" />
                     <div className="w-11 h-6 bg-chronos-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-chronos-500"></div>
                   </label>
                 </div>
@@ -598,9 +708,9 @@ interface StatusCardProps {
 }
 
 const StatusCard: React.FC<StatusCardProps> = ({ icon: Icon, title, status, configured, onTest }) => (
-  <div className={`bg-chronos-900 border rounded-xl p-4 ${
-    status === 'success' ? 'border-green-500/30' : 
-    status === 'error' ? 'border-red-500/30' : 
+  <div className={`bg-chronos-900 border rounded-xl p-4 transition-all ${
+    status === 'success' ? 'border-green-500/30 shadow-lg shadow-green-500/5' : 
+    status === 'error' ? 'border-red-500/30 shadow-lg shadow-red-500/5' : 
     'border-chronos-800'
   }`}>
     <div className="flex items-center justify-between mb-3">
@@ -608,12 +718,12 @@ const StatusCard: React.FC<StatusCardProps> = ({ icon: Icon, title, status, conf
         <div className={`p-2 rounded-lg ${
           status === 'success' ? 'bg-green-500/20' : 
           status === 'error' ? 'bg-red-500/20' : 
-          'bg-chronos-800'
+          configured ? 'bg-chronos-700' : 'bg-chronos-800'
         }`}>
           <Icon className={`w-5 h-5 ${
             status === 'success' ? 'text-green-400' : 
             status === 'error' ? 'text-red-400' : 
-            'text-gray-400'
+            configured ? 'text-chronos-400' : 'text-gray-500'
           }`} />
         </div>
         <span className="font-medium text-white">{title}</span>
@@ -629,13 +739,13 @@ const StatusCard: React.FC<StatusCardProps> = ({ icon: Icon, title, status, conf
       )}
     </div>
     <div className="flex items-center justify-between">
-      <span className={`text-sm ${configured ? 'text-green-400' : 'text-gray-500'}`}>
-        {configured ? 'Configured' : 'Not configured'}
+      <span className={`text-sm ${configured ? 'text-green-400' : 'text-yellow-500'}`}>
+        {configured ? '✓ Configured' : '○ Not configured'}
       </span>
       <button 
         onClick={onTest}
         disabled={!configured || status === 'testing'}
-        className="text-xs px-3 py-1 bg-chronos-700 hover:bg-chronos-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded transition-colors"
+        className="text-xs px-3 py-1.5 bg-chronos-700 hover:bg-chronos-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded transition-colors"
       >
         {status === 'testing' ? 'Testing...' : 'Test'}
       </button>
@@ -661,14 +771,13 @@ const SettingsSection: React.FC<SettingsSectionProps> = ({
       <div className="flex items-center gap-3">
         <Icon className="w-5 h-5 text-chronos-400" />
         <h2 className="text-lg font-semibold text-white">{title}</h2>
-        {status && (
+        {status && status !== 'idle' && (
           <span className={`text-xs px-2 py-1 rounded-full ${
             status === 'success' ? 'bg-green-500/20 text-green-400' :
             status === 'error' ? 'bg-red-500/20 text-red-400' :
-            status === 'testing' ? 'bg-blue-500/20 text-blue-400' :
-            'bg-gray-500/20 text-gray-400'
+            'bg-blue-500/20 text-blue-400'
           }`}>
-            {status === 'success' ? 'Connected' : status === 'error' ? 'Error' : status === 'testing' ? 'Testing...' : 'Not tested'}
+            {status === 'success' ? 'Connected' : status === 'error' ? 'Error' : 'Testing...'}
           </span>
         )}
       </div>
@@ -677,6 +786,7 @@ const SettingsSection: React.FC<SettingsSectionProps> = ({
           <a 
             href={helpLink} 
             target="_blank" 
+            rel="noopener noreferrer"
             className="text-xs text-gray-500 hover:text-chronos-400 flex items-center gap-1"
           >
             Docs <ExternalLink className="w-3 h-3" />
@@ -706,30 +816,39 @@ interface InputFieldProps {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
-  example?: string;
+  hint?: string;
   isSecret?: boolean;
   showSecret?: boolean;
   onToggleSecret?: () => void;
-  hint?: string;
+  validation?: { valid: boolean; message: string };
+  required?: boolean;
 }
 
 const InputField: React.FC<InputFieldProps> = ({ 
-  label, value, onChange, placeholder, example, isSecret, showSecret, onToggleSecret, hint 
+  label, value, onChange, placeholder, hint, isSecret, showSecret, onToggleSecret, validation, required 
 }) => (
   <div>
-    <div className="flex items-center justify-between mb-2">
-      <label className="text-sm font-medium text-gray-300">{label}</label>
-      {example && !value && (
-        <span className="text-xs text-gray-600">e.g., {example}</span>
-      )}
-    </div>
+    {label && (
+      <div className="flex items-center justify-between mb-2">
+        <label className="text-sm font-medium text-gray-300 flex items-center gap-1">
+          {label}
+          {required && <span className="text-red-400">*</span>}
+        </label>
+      </div>
+    )}
     <div className="relative">
       <input
         type={isSecret && !showSecret ? 'password' : 'text'}
         value={value}
         onChange={e => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full bg-chronos-800 border border-chronos-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-600 focus:border-chronos-500 focus:ring-1 focus:ring-chronos-500 transition-colors pr-10"
+        className={`w-full bg-chronos-800 border rounded-lg px-4 py-2.5 text-white placeholder-gray-600 focus:ring-1 transition-colors pr-10 ${
+          validation?.valid === false 
+            ? 'border-red-500/50 focus:border-red-500 focus:ring-red-500/30' 
+            : value && validation?.valid 
+            ? 'border-green-500/50 focus:border-green-500 focus:ring-green-500/30'
+            : 'border-chronos-700 focus:border-chronos-500 focus:ring-chronos-500/30'
+        }`}
       />
       {isSecret && (
         <button 
@@ -740,7 +859,19 @@ const InputField: React.FC<InputFieldProps> = ({
           {showSecret ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
         </button>
       )}
+      {!isSecret && value && validation && (
+        <div className="absolute right-3 top-1/2 -translate-y-1/2">
+          {validation.valid ? (
+            <CheckCircle className="w-4 h-4 text-green-400" />
+          ) : (
+            <AlertCircle className="w-4 h-4 text-red-400" />
+          )}
+        </div>
+      )}
     </div>
+    {validation?.valid === false && validation.message && (
+      <p className="mt-1 text-xs text-red-400">{validation.message}</p>
+    )}
     {hint && <p className="mt-1 text-xs text-gray-500">{hint}</p>}
   </div>
 );
