@@ -1,4 +1,4 @@
-import { LayoutDashboard, Compass, Users, UploadCloud, Package, Settings, BarChart, BookOpen } from 'lucide-react';
+import { LayoutDashboard, Compass, Users, UploadCloud, Package, Settings, BarChart, BookOpen, Brain, Shield, DollarSign } from 'lucide-react';
 
 export const NAV_ITEMS = [
     { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -7,6 +7,17 @@ export const NAV_ITEMS = [
     { id: 'attribution', icon: BarChart, label: 'Attribution Models' },
     { id: 'offline', icon: UploadCloud, label: 'Offline Conversions' },
     { id: 'datasources', icon: Package, label: 'Data Sources' },
+];
+
+// AI-Powered Features Section
+export const AI_NAV_ITEMS = [
+    { id: 'predictions', icon: Brain, label: 'Predictive Insights', badge: 'AI' },
+    { id: 'fraud', icon: Shield, label: 'Fraud Detection', badge: 'AI' },
+    { id: 'budget', icon: DollarSign, label: 'Budget Optimizer', badge: 'AI' },
+];
+
+// Settings & Setup
+export const SETTINGS_NAV_ITEMS = [
     { id: 'setup', icon: BookOpen, label: 'Setup Guide' },
     { id: 'settings', icon: Settings, label: 'Settings' },
 ];
