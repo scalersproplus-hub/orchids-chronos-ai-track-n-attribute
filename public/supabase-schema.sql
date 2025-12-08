@@ -10,16 +10,28 @@
 -- - Event tracking with full attribution data
 -- - Conversion tracking with offline upload status
 -- - Cross-device identity graph
+-- - RLS DISABLED for maximum compatibility
 -- ============================================
 
 -- Enable UUID extension if not already enabled
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- ============================================
+-- DISABLE ROW LEVEL SECURITY (RLS)
+-- This ensures the tracking tag can read/write freely
+-- ============================================
+
+-- Drop any existing policies first (run these if upgrading)
+-- DROP POLICY IF EXISTS "anon_select_visitors" ON visitors;
+-- DROP POLICY IF EXISTS "anon_insert_visitors" ON visitors;
+-- etc.
+
+-- ============================================
 -- 1. VISITORS TABLE
 -- Stores unique visitor profiles identified by fingerprint
 -- ============================================
-CREATE TABLE IF NOT EXISTS visitors (
+DROP TABLE IF EXISTS visitors CASCADE;
+CREATE TABLE visitors (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     fingerprint_id VARCHAR(64) UNIQUE NOT NULL,
     
@@ -60,6 +72,14 @@ CREATE TABLE IF NOT EXISTS visitors (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- DISABLE RLS on visitors
+ALTER TABLE visitors DISABLE ROW LEVEL SECURITY;
+
+-- Grant full access to anon and authenticated roles
+GRANT ALL ON visitors TO anon;
+GRANT ALL ON visitors TO authenticated;
+GRANT ALL ON visitors TO service_role;
+
 -- Indexes for visitor lookups
 CREATE INDEX IF NOT EXISTS idx_visitors_fingerprint ON visitors(fingerprint_id);
 CREATE INDEX IF NOT EXISTS idx_visitors_email ON visitors(email);
@@ -72,7 +92,8 @@ CREATE INDEX IF NOT EXISTS idx_visitors_last_seen ON visitors(last_seen);
 -- 2. EVENTS TABLE
 -- Stores all tracking events (pageviews, clicks, etc.)
 -- ============================================
-CREATE TABLE IF NOT EXISTS events (
+DROP TABLE IF EXISTS events CASCADE;
+CREATE TABLE events (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     visitor_id UUID REFERENCES visitors(id) ON DELETE CASCADE,
     fingerprint_id VARCHAR(64) NOT NULL,
@@ -128,6 +149,14 @@ CREATE TABLE IF NOT EXISTS events (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- DISABLE RLS on events
+ALTER TABLE events DISABLE ROW LEVEL SECURITY;
+
+-- Grant full access
+GRANT ALL ON events TO anon;
+GRANT ALL ON events TO authenticated;
+GRANT ALL ON events TO service_role;
+
 -- Indexes for event queries
 CREATE INDEX IF NOT EXISTS idx_events_visitor ON events(visitor_id);
 CREATE INDEX IF NOT EXISTS idx_events_fingerprint ON events(fingerprint_id);
@@ -141,7 +170,8 @@ CREATE INDEX IF NOT EXISTS idx_events_utm_source ON events(utm_source);
 -- 3. CONVERSIONS TABLE
 -- Stores purchase/conversion events for offline upload
 -- ============================================
-CREATE TABLE IF NOT EXISTS conversions (
+DROP TABLE IF EXISTS conversions CASCADE;
+CREATE TABLE conversions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     visitor_id UUID REFERENCES visitors(id) ON DELETE SET NULL,
     fingerprint_id VARCHAR(64),
@@ -190,6 +220,14 @@ CREATE TABLE IF NOT EXISTS conversions (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- DISABLE RLS on conversions
+ALTER TABLE conversions DISABLE ROW LEVEL SECURITY;
+
+-- Grant full access
+GRANT ALL ON conversions TO anon;
+GRANT ALL ON conversions TO authenticated;
+GRANT ALL ON conversions TO service_role;
+
 -- Indexes for conversion queries
 CREATE INDEX IF NOT EXISTS idx_conversions_visitor ON conversions(visitor_id);
 CREATE INDEX IF NOT EXISTS idx_conversions_email ON conversions(email);
@@ -203,7 +241,8 @@ CREATE INDEX IF NOT EXISTS idx_conversions_gclid ON conversions(gclid);
 -- 4. IDENTITY_GRAPH TABLE
 -- Links multiple devices/sessions to the same user
 -- ============================================
-CREATE TABLE IF NOT EXISTS identity_graph (
+DROP TABLE IF EXISTS identity_graph CASCADE;
+CREATE TABLE identity_graph (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     visitor_id UUID REFERENCES visitors(id) ON DELETE CASCADE,
     
@@ -229,6 +268,14 @@ CREATE TABLE IF NOT EXISTS identity_graph (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- DISABLE RLS on identity_graph
+ALTER TABLE identity_graph DISABLE ROW LEVEL SECURITY;
+
+-- Grant full access
+GRANT ALL ON identity_graph TO anon;
+GRANT ALL ON identity_graph TO authenticated;
+GRANT ALL ON identity_graph TO service_role;
+
 -- Indexes for identity resolution
 CREATE INDEX IF NOT EXISTS idx_identity_visitor ON identity_graph(visitor_id);
 CREATE INDEX IF NOT EXISTS idx_identity_fingerprint ON identity_graph(fingerprint_id);
@@ -236,10 +283,11 @@ CREATE INDEX IF NOT EXISTS idx_identity_email ON identity_graph(email);
 CREATE INDEX IF NOT EXISTS idx_identity_match_type ON identity_graph(match_type);
 
 -- ============================================
--- 5. CAMPAIGNS TABLE (Optional - for importing ad data)
+-- 5. CAMPAIGNS TABLE
 -- Stores campaign performance data
 -- ============================================
-CREATE TABLE IF NOT EXISTS campaigns (
+DROP TABLE IF EXISTS campaigns CASCADE;
+CREATE TABLE campaigns (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     
     -- Campaign identity
@@ -272,6 +320,14 @@ CREATE TABLE IF NOT EXISTS campaigns (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- DISABLE RLS on campaigns
+ALTER TABLE campaigns DISABLE ROW LEVEL SECURITY;
+
+-- Grant full access
+GRANT ALL ON campaigns TO anon;
+GRANT ALL ON campaigns TO authenticated;
+GRANT ALL ON campaigns TO service_role;
+
 -- Indexes for campaign queries
 CREATE INDEX IF NOT EXISTS idx_campaigns_platform ON campaigns(platform);
 CREATE INDEX IF NOT EXISTS idx_campaigns_name ON campaigns(campaign_name);
@@ -280,7 +336,8 @@ CREATE INDEX IF NOT EXISTS idx_campaigns_name ON campaigns(campaign_name);
 -- 6. UPLOAD_BATCHES TABLE
 -- Tracks offline conversion upload history
 -- ============================================
-CREATE TABLE IF NOT EXISTS upload_batches (
+DROP TABLE IF EXISTS upload_batches CASCADE;
+CREATE TABLE upload_batches (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     
     -- Batch info
@@ -302,9 +359,100 @@ CREATE TABLE IF NOT EXISTS upload_batches (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- DISABLE RLS on upload_batches
+ALTER TABLE upload_batches DISABLE ROW LEVEL SECURITY;
+
+-- Grant full access
+GRANT ALL ON upload_batches TO anon;
+GRANT ALL ON upload_batches TO authenticated;
+GRANT ALL ON upload_batches TO service_role;
+
 -- Index for upload history
 CREATE INDEX IF NOT EXISTS idx_upload_batches_platform ON upload_batches(platform);
 CREATE INDEX IF NOT EXISTS idx_upload_batches_time ON upload_batches(upload_time);
+
+-- ============================================
+-- 7. WEBHOOK_LOGS TABLE (NEW - For real-time integrations)
+-- Logs incoming/outgoing webhooks
+-- ============================================
+DROP TABLE IF EXISTS webhook_logs CASCADE;
+CREATE TABLE webhook_logs (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    
+    -- Webhook details
+    direction VARCHAR(10) NOT NULL, -- inbound, outbound
+    endpoint VARCHAR(500),
+    method VARCHAR(10) DEFAULT 'POST',
+    
+    -- Request/Response
+    headers JSONB DEFAULT '{}',
+    payload JSONB DEFAULT '{}',
+    response_status INTEGER,
+    response_body TEXT,
+    
+    -- Metadata
+    source VARCHAR(100), -- shopify, klaviyo, zapier, etc.
+    event_type VARCHAR(100),
+    
+    -- Timestamps
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- DISABLE RLS on webhook_logs
+ALTER TABLE webhook_logs DISABLE ROW LEVEL SECURITY;
+
+-- Grant full access
+GRANT ALL ON webhook_logs TO anon;
+GRANT ALL ON webhook_logs TO authenticated;
+GRANT ALL ON webhook_logs TO service_role;
+
+CREATE INDEX IF NOT EXISTS idx_webhook_logs_source ON webhook_logs(source);
+CREATE INDEX IF NOT EXISTS idx_webhook_logs_created ON webhook_logs(created_at);
+
+-- ============================================
+-- 8. SETTINGS TABLE (NEW - Store account settings)
+-- ============================================
+DROP TABLE IF EXISTS settings CASCADE;
+CREATE TABLE settings (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    account_id VARCHAR(100) UNIQUE NOT NULL,
+    
+    -- Meta/Facebook settings
+    meta_pixel_id VARCHAR(100),
+    meta_capi_token TEXT,
+    meta_test_code VARCHAR(50),
+    
+    -- Google Ads settings
+    google_customer_id VARCHAR(50),
+    google_conversion_id VARCHAR(100),
+    google_conversion_label VARCHAR(100),
+    google_developer_token TEXT,
+    
+    -- CNAME/First-party domain settings
+    tracking_domain VARCHAR(255), -- e.g., track.yourdomain.com
+    tracking_domain_verified BOOLEAN DEFAULT FALSE,
+    
+    -- Webhook settings
+    webhook_secret VARCHAR(100),
+    webhook_endpoints JSONB DEFAULT '[]',
+    
+    -- Data retention
+    data_retention_days INTEGER DEFAULT 365,
+    
+    -- Timestamps
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- DISABLE RLS on settings
+ALTER TABLE settings DISABLE ROW LEVEL SECURITY;
+
+-- Grant full access
+GRANT ALL ON settings TO anon;
+GRANT ALL ON settings TO authenticated;
+GRANT ALL ON settings TO service_role;
+
+CREATE INDEX IF NOT EXISTS idx_settings_account ON settings(account_id);
 
 -- ============================================
 -- HELPER FUNCTIONS
@@ -321,7 +469,7 @@ BEGIN
     WHERE fingerprint_id = NEW.fingerprint_id;
     RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Trigger to auto-update visitor on new event
 DROP TRIGGER IF EXISTS trigger_update_visitor_on_event ON events;
@@ -337,7 +485,7 @@ BEGIN
     NEW.updated_at = NOW();
     RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Triggers for updated_at
 DROP TRIGGER IF EXISTS trigger_visitors_updated ON visitors;
@@ -352,40 +500,22 @@ CREATE TRIGGER trigger_conversions_updated
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at();
 
--- ============================================
--- ROW LEVEL SECURITY (RLS) - Optional
--- Enable if you want to restrict access
--- ============================================
-
--- ALTER TABLE visitors ENABLE ROW LEVEL SECURITY;
--- ALTER TABLE events ENABLE ROW LEVEL SECURITY;
--- ALTER TABLE conversions ENABLE ROW LEVEL SECURITY;
-
--- Example policy for authenticated users:
--- CREATE POLICY "Users can view all visitors" ON visitors FOR SELECT USING (true);
--- CREATE POLICY "Users can insert visitors" ON visitors FOR INSERT WITH CHECK (true);
--- CREATE POLICY "Users can update visitors" ON visitors FOR UPDATE USING (true);
+DROP TRIGGER IF EXISTS trigger_settings_updated ON settings;
+CREATE TRIGGER trigger_settings_updated
+    BEFORE UPDATE ON settings
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at();
 
 -- ============================================
--- SAMPLE DATA (Optional - for testing)
+-- REALTIME SUBSCRIPTIONS (Enable for live updates)
 -- ============================================
 
--- Insert a test visitor
-/*
-INSERT INTO visitors (fingerprint_id, email, first_name, last_name)
-VALUES ('fp_test123456789012345678901234', 'test@example.com', 'Test', 'User');
-
--- Insert a test event
-INSERT INTO events (visitor_id, fingerprint_id, event_name, event_type, page_url, utm_source, utm_medium)
-SELECT id, fingerprint_id, 'PageView', 'pageview', 'https://example.com', 'google', 'cpc'
-FROM visitors WHERE email = 'test@example.com';
-
--- Insert a test conversion
-INSERT INTO conversions (visitor_id, fingerprint_id, email, order_id, conversion_value, gclid)
-SELECT id, fingerprint_id, email, 'ORDER-001', 99.99, 'Cj0KCQjw...'
-FROM visitors WHERE email = 'test@example.com';
-*/
+-- Enable realtime for events table (for live dashboard)
+ALTER PUBLICATION supabase_realtime ADD TABLE events;
+ALTER PUBLICATION supabase_realtime ADD TABLE conversions;
 
 -- ============================================
 -- DONE! Your database is ready.
+-- RLS is DISABLED - suitable for server-side use.
+-- For client-side access, use your anon key.
 -- ============================================
