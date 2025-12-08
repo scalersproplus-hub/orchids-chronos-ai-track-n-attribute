@@ -1,7 +1,9 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import './index.css'
-import App from './App.tsx'
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import './index.css';
+import App from './App';
+import { AppProvider } from './contexts/AppContext';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
 
 if (typeof window !== "undefined") {
   const sendToParent = (data: any) => {
@@ -21,7 +23,6 @@ if (typeof window !== "undefined") {
       error: event.error,
     });
 
-    // Send structured payload to parent iframe
     sendToParent({
       type: "ERROR_CAPTURED",
       error: {
@@ -46,7 +47,6 @@ if (typeof window !== "undefined") {
         : String(reason);
     const stack = typeof reason === "object" ? reason?.stack : undefined;
 
-    // Mirror to parent iframe as well
     sendToParent({
       type: "ERROR_CAPTURED",
       error: {
@@ -64,6 +64,10 @@ if (typeof window !== "undefined") {
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+    <ErrorBoundary>
+      <AppProvider>
+        <App />
+      </AppProvider>
+    </ErrorBoundary>
   </StrictMode>,
-)
+);
