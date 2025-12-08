@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { Dashboard } from './components/Dashboard';
 import { JourneyMap } from './components/JourneyMap';
-import { AttributionSettings } from './components/AttributionSettings';
+import { Settings } from './components/Settings';
 import { MOCK_CAMPAIGNS, MOCK_JOURNEYS } from './services/mockData';
 import { useApp } from './contexts/AppContext';
 import { AttributionModeler } from './components/AttributionModeler';
@@ -84,7 +84,7 @@ const AppContent: React.FC = () => {
       case 'attribution': return <AttributionModeler campaigns={MOCK_CAMPAIGNS} journeys={MOCK_JOURNEYS} />;
       case 'datasources': return <DataSources />;
       case 'setup': return <SetupGuide />;
-      case 'settings': return <AttributionSettings />;
+      case 'settings': return <Settings />;
       default: return <Dashboard campaigns={MOCK_CAMPAIGNS} />;
     }
   };
