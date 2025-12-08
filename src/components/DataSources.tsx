@@ -47,7 +47,9 @@ export const DataSources: React.FC = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     <div className="space-y-4">
                         <h3 className="font-semibold text-white">1. Install Your Universal Tag</h3>
-                        <p className="text-sm text-gray-400">Place this single snippet in the `<head>` of every page on <strong>{currentAccount.websiteUrl}</strong>.</p>
+                        <p className="text-sm text-gray-400">
+                            Place this single snippet in the {'<head>'} of every page on <strong>{currentAccount.websiteUrl}</strong>.
+                        </p>
                         <div className="bg-black/50 rounded-lg border border-chronos-800">
                              <div className="flex justify-between items-center px-4 py-2 bg-chronos-950/50">
                                 <span className="text-xs text-gray-400 font-mono flex items-center gap-2"><Code className="w-4 h-4" /> HTML Head</span>

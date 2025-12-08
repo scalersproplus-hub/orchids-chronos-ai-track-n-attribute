@@ -86,7 +86,9 @@ const Step1 = ({ localAccount, setLocalAccount }: any) => (
 const Step2 = ({ websiteUrl }: any) => (
      <div className="animate-fade-in">
         <h2 className="text-xl font-bold text-white mb-2">Install the Chronos Universal Tag</h2>
-        <p className="text-gray-400 mb-6">Place this single snippet in the `<head>` of your website. This is the only code you'll ever need.</p>
+        <p className="text-gray-400 mb-6">
+            Place this single snippet in the {'<head>'} of your website. This is the only code you'll ever need.
+        </p>
         <div className="bg-black/50 p-4 rounded-lg font-mono text-xs text-green-300 border border-chronos-800">
             {`<script async src="https://cdn.chronos.ai/tag.js" data-chronos-id="act_12345"></script>`}
         </div>
