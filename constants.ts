@@ -1,4 +1,4 @@
-import { LayoutDashboard, Compass, Users, UploadCloud, Package, Settings, BarChart } from 'lucide-react';
+import { LayoutDashboard, Compass, Users, UploadCloud, Package, Settings, BarChart, BookOpen } from 'lucide-react';
 
 export const NAV_ITEMS = [
     { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -7,7 +7,8 @@ export const NAV_ITEMS = [
     { id: 'attribution', icon: BarChart, label: 'Attribution Models' },
     { id: 'offline', icon: UploadCloud, label: 'Offline Conversions' },
     { id: 'datasources', icon: Package, label: 'Data Sources' },
-    { id: 'settings', icon: Settings, label: 'Integrations & Settings' },
+    { id: 'setup', icon: BookOpen, label: 'Setup Guide' },
+    { id: 'settings', icon: Settings, label: 'Settings' },
 ];
 
 export const API_ENDPOINTS = {
