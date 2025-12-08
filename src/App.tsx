@@ -15,7 +15,7 @@ import { Toast } from './components/common/Toast';
 import { CommandPalette } from './components/common/CommandPalette';
 import { UserProfile } from './components/common/UserProfile';
 import { ConversationalAI } from './components/ai/ConversationalAI';
-import { NAV_ITEMS } from '../constants';
+import { NAV_ITEMS } from './constants';
 import { BrainCircuit, Command } from 'lucide-react';
 import './index.css';
 
