@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ChevronDown, PlusCircle, Check, BrainCircuit } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
-import { NAV_ITEMS } from '@/constants';
+import { NAV_ITEMS } from '../../constants';
 
 interface SidebarProps {}
 
