@@ -13,6 +13,7 @@
     "@google/genai": "^1.30.0",
     "@supabase/supabase-js": "^2.87.0",
     "crypto-js": "^4.2.0",
+    "estree-walker": "^3.0.3",
     "lucide-react": "^0.555.0",
     "magic-string": "^0.30.21",
     "react": "^19.2.0",
