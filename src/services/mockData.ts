@@ -30,24 +30,85 @@ export const MOCK_ACCOUNTS: AccountProfile[] = [
   },
 ];
 
-// Example values for reference (shown in UI as placeholders/hints)
+// ============================================
+// EXAMPLE VALUES
+// These are shown in the UI as placeholders/hints
+// Users should replace with their own credentials
+// ============================================
 export const EXAMPLE_VALUES = {
   meta: {
     pixelId: '1234567890123456',
+    pixelIdHint: 'Find this in Events Manager → Data Sources → Your Pixel',
     capiToken: 'EAAGm0PX4ZCpsBAO...',
+    capiTokenHint: 'Generate in Events Manager → Settings → Conversions API → Generate Token',
     testCode: 'TEST12345',
+    testCodeHint: 'Optional - used to verify events in Test Events tab',
   },
   google: {
     customerId: '123-456-7890',
+    customerIdHint: 'Your Google Ads account ID (found in top-right of Google Ads)',
     conversionId: 'AW-123456789',
+    conversionIdHint: 'From your conversion action setup (starts with AW-)',
     conversionLabel: 'AbCdEfGhIjKlMnOp',
+    conversionLabelHint: 'The label part of your conversion tag',
     developerToken: 'aBcDeFgHiJkLmNoP',
+    developerTokenHint: 'Apply at Google Ads API Center (requires basic access)',
   },
   supabase: {
-    url: 'https://yourproject.supabase.co',
-    key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+    url: 'https://abcdefgh.supabase.co',
+    urlHint: 'Found in Supabase Dashboard → Settings → API → Project URL',
+    key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI...',
+    keyHint: 'Found in Supabase Dashboard → Settings → API → anon public key',
   },
   trackingDomain: 'track.yourdomain.com',
+  trackingDomainHint: 'A subdomain that points to our tracking servers via CNAME',
+  
+  // Webhook examples
+  webhook: {
+    shopify: 'https://yourstore.myshopify.com/admin/api/webhooks',
+    stripe: 'https://api.stripe.com/v1/webhook_endpoints',
+    klaviyo: 'https://a.klaviyo.com/api/webhooks',
+  }
+};
+
+// ============================================
+// VALIDATION HELPERS
+// ============================================
+export const VALIDATION_PATTERNS = {
+  metaPixelId: /^\d{15,16}$/,
+  googleCustomerId: /^\d{3}-\d{3}-\d{4}$/,
+  googleConversionId: /^AW-\d+$/,
+  supabaseUrl: /^https:\/\/[a-z0-9]+\.supabase\.co$/,
+  domain: /^[a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,}$/i,
+};
+
+export const validateField = (field: string, value: string): { valid: boolean; message: string } => {
+  if (!value) return { valid: false, message: 'This field is required' };
+  
+  switch (field) {
+    case 'metaPixelId':
+      return VALIDATION_PATTERNS.metaPixelId.test(value)
+        ? { valid: true, message: '' }
+        : { valid: false, message: 'Pixel ID should be 15-16 digits' };
+    case 'googleCustomerId':
+      return VALIDATION_PATTERNS.googleCustomerId.test(value)
+        ? { valid: true, message: '' }
+        : { valid: false, message: 'Format: 123-456-7890' };
+    case 'googleConversionId':
+      return VALIDATION_PATTERNS.googleConversionId.test(value)
+        ? { valid: true, message: '' }
+        : { valid: false, message: 'Format: AW-123456789' };
+    case 'supabaseUrl':
+      return VALIDATION_PATTERNS.supabaseUrl.test(value)
+        ? { valid: true, message: '' }
+        : { valid: false, message: 'Should be https://yourproject.supabase.co' };
+    case 'trackingDomain':
+      return VALIDATION_PATTERNS.domain.test(value)
+        ? { valid: true, message: '' }
+        : { valid: false, message: 'Enter a valid domain like track.example.com' };
+    default:
+      return { valid: true, message: '' };
+  }
 };
 
 const MOCK_ADSETS_FB1: AdSet[] = [
@@ -98,7 +159,6 @@ export const MOCK_CAMPAIGNS: Campaign[] = [
     leads: 45,
     roas: 2.8
   },
-  // ... more campaigns
 ];
 
 export const MOCK_JOURNEYS: CustomerJourney[] = [
