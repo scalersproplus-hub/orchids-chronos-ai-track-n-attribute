@@ -1,0 +1,5 @@
+{
+  "name": "Chronos AI Attribution",
+  "description": "A Hyros-inspired multi-touch attribution dashboard that uses AI to track true customer LTV and optimize ad spend.",
+  "requestFramePermissions": []
+}
