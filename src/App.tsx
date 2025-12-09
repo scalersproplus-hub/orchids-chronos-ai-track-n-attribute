@@ -20,7 +20,7 @@ import { FraudDetection } from './components/ai/FraudDetection';
 import { BudgetOptimizer } from './components/ai/BudgetOptimizer';
 import { NAV_ITEMS, AI_NAV_ITEMS, SETTINGS_NAV_ITEMS } from './constants';
 import { useKeyboardShortcuts, KEYBOARD_SHORTCUTS } from './hooks/useKeyboardShortcuts';
-import { BrainCircuit, Command, Keyboard, X } from 'lucide-react';
+import { BrainCircuit, Command, Keyboard, X, ChevronRight, RefreshCw } from 'lucide-react';
 import './index.css';
 
 const KeyboardShortcutsHelp: React.FC<{ onClose: () => void }> = ({ onClose }) => (
@@ -56,13 +56,102 @@ const KeyboardShortcutsHelp: React.FC<{ onClose: () => void }> = ({ onClose }) =
   </div>
 );
 
+// Breadcrumbs component
+const Breadcrumbs: React.FC<{ currentView: string }> = ({ currentView }) => {
+  const allNavItems = [...NAV_ITEMS, ...AI_NAV_ITEMS, ...SETTINGS_NAV_ITEMS];
+  const currentPage = allNavItems.find(item => item.id === currentView);
+  
+  // Determine parent category
+  let category = 'Analytics';
+  if (AI_NAV_ITEMS.find(item => item.id === currentView)) category = 'AI Features';
+  if (SETTINGS_NAV_ITEMS.find(item => item.id === currentView)) category = 'Configuration';
+  
+  return (
+    <nav className="flex items-center gap-2 text-sm text-gray-500 mb-1">
+      <span className="hover:text-gray-300 cursor-pointer">{category}</span>
+      <ChevronRight className="w-3 h-3" />
+      <span className="text-chronos-400">{currentPage?.label || 'Dashboard'}</span>
+    </nav>
+  );
+};
+
+// Last updated indicator
+const LastUpdatedIndicator: React.FC<{ lastUpdated: Date | null; onRefresh: () => void; isRefreshing: boolean }> = ({ 
+  lastUpdated, onRefresh, isRefreshing 
+}) => {
+  const [, forceUpdate] = useState({});
+  
+  // Update every minute
+  useEffect(() => {
+    const interval = setInterval(() => forceUpdate({}), 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const getRelativeTime = (date: Date) => {
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffSecs = Math.floor(diffMs / 1000);
+    const diffMins = Math.floor(diffSecs / 60);
+    const diffHours = Math.floor(diffMins / 60);
+    
+    if (diffSecs < 60) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    return date.toLocaleDateString();
+  };
+
+  return (
+    <div className="flex items-center gap-2 text-xs text-gray-500">
+      {lastUpdated && (
+        <span>Updated {getRelativeTime(lastUpdated)}</span>
+      )}
+      <button
+        onClick={onRefresh}
+        disabled={isRefreshing}
+        className="p-1.5 hover:bg-chronos-800 rounded-lg transition-colors disabled:opacity-50"
+        title="Refresh data"
+      >
+        <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
+      </button>
+    </div>
+  );
+};
+
 const AppContent: React.FC = () => {
   const { state, setCmdkOpen, setAiModalOpen } = useApp();
   const { currentView, currentAccount } = state;
   const [showShortcuts, setShowShortcuts] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('sidebar_collapsed') === 'true';
+    }
+    return false;
+  });
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(new Date());
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Enable keyboard shortcuts
   useKeyboardShortcuts();
+
+  // Sync sidebar collapsed state
+  useEffect(() => {
+    const handleStorage = () => {
+      const collapsed = localStorage.getItem('sidebar_collapsed') === 'true';
+      setSidebarCollapsed(collapsed);
+    };
+    window.addEventListener('storage', handleStorage);
+    
+    // Also listen for direct changes
+    const observer = new MutationObserver(() => {
+      const collapsed = localStorage.getItem('sidebar_collapsed') === 'true';
+      setSidebarCollapsed(collapsed);
+    });
+    
+    return () => {
+      window.removeEventListener('storage', handleStorage);
+      observer.disconnect();
+    };
+  }, []);
 
   // Listen for ? key to show shortcuts
   useEffect(() => {
@@ -77,6 +166,18 @@ const AppContent: React.FC = () => {
     document.addEventListener('keydown', handleKey);
     return () => document.removeEventListener('keydown', handleKey);
   }, [state.cmdkOpen, state.aiModalOpen]);
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    // Simulate data refresh
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    setLastUpdated(new Date());
+    setIsRefreshing(false);
+  };
+
+  const handleSidebarCollapse = (collapsed: boolean) => {
+    setSidebarCollapsed(collapsed);
+  };
 
   const renderContent = () => {
     switch (currentView) {
@@ -102,16 +203,23 @@ const AppContent: React.FC = () => {
 
   return (
     <>
-      <Sidebar />
-      <main className="ml-64 flex-1 p-8">
-        <header className="flex justify-between items-center mb-8">
+      <Sidebar collapsed={sidebarCollapsed} onCollapsedChange={handleSidebarCollapse} />
+      <main className={`flex-1 p-8 transition-all duration-300 ${sidebarCollapsed ? 'ml-16' : 'ml-64'}`}>
+        <header className="flex justify-between items-start mb-8">
           <div>
+            <Breadcrumbs currentView={currentView} />
             <h1 className="text-2xl font-bold text-white tracking-tight">{currentPage.label}</h1>
             <p className="text-sm text-gray-500 mt-1">
               Active Profile: <span className="text-chronos-400 font-medium">{currentAccount.name}</span>
             </p>
           </div>
           <div className="flex items-center gap-3">
+             <LastUpdatedIndicator 
+               lastUpdated={lastUpdated} 
+               onRefresh={handleRefresh}
+               isRefreshing={isRefreshing}
+             />
+             <div className="w-px h-6 bg-chronos-800" />
              <button 
                 onClick={() => setShowShortcuts(true)}
                 className="p-2 text-gray-500 hover:text-white hover:bg-chronos-800 rounded-lg transition-all"
