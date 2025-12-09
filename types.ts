@@ -168,3 +168,30 @@ export type UserProfile = {
   email: string;
   avatarUrl: string;
 };
+
+// Saved Views & Quick Filters
+export interface SavedView {
+  id: string;
+  name: string;
+  icon?: string;
+  filters: {
+    platform: 'All' | 'Facebook' | 'Google' | 'TikTok';
+    dateRange: { start: string; end: string };
+    status?: 'Active' | 'Paused' | 'All';
+    minSpend?: number;
+    maxSpend?: number;
+    minRoas?: number;
+  };
+  isFavorite: boolean;
+  createdAt: string;
+  lastUsedAt?: string;
+}
+
+// Comparison Mode
+export interface ComparisonConfig {
+  type: 'period' | 'campaign' | 'model';
+  itemA: string;
+  itemB: string;
+  dateRangeA?: { start: string; end: string };
+  dateRangeB?: { start: string; end: string };
+}
