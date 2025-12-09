@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@babel/parser": "^7.28.5",
     "@fingerprintjs/fingerprintjs": "^5.0.1",
     "@google/genai": "^1.30.0",
     "@supabase/supabase-js": "^2.87.0",
