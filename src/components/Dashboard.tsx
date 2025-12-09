@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Legend } from 'recharts';
-import { TrendingUp, Target, DollarSign, BrainCircuit, AlertTriangle, Lightbulb, ChevronDown, CheckCircle, BarChart2, Download, FileSpreadsheet, FileJson } from 'lucide-react';
-import { Campaign, AnalysisStatus, AIInsight, TimeSeriesData, Anomaly, AdSet } from '../types';
+import { TrendingUp, Target, DollarSign, BrainCircuit, AlertTriangle, Lightbulb, ChevronDown, CheckCircle, BarChart2, Download, FileSpreadsheet, FileJson, GitCompare } from 'lucide-react';
+import { Campaign, AnalysisStatus, AIInsight, TimeSeriesData, Anomaly, AdSet, SavedView } from '../types';
 import { analyzeCampaignPerformance, detectAnomalies, getBudgetSuggestions } from '../services/geminiService';
 import { MOCK_TIME_SERIES, MOCK_CAMPAIGNS } from '../services/mockData';
 import { SkeletonLoader } from './common/SkeletonLoader';
 import { DateRangePicker } from './common/DateRangePicker';
+import { SavedViews } from './common/SavedViews';
+import { ComparisonMode } from './common/ComparisonMode';
+import { InlineEditText, InlineEditNumber, InlineEditTags } from './common/InlineEdit';
 import { useApp } from '../contexts/AppContext';
 
 interface DashboardProps {
@@ -13,6 +16,7 @@ interface DashboardProps {
 }
 
 type PlatformFilter = 'All' | 'Facebook' | 'Google' | 'TikTok';
+type StatusFilter = 'Active' | 'Paused' | 'All';
 
 type DateRange = {
   start: Date | null;
@@ -115,11 +119,16 @@ export const Dashboard: React.FC<DashboardProps> = ({ campaigns: initialCampaign
   const [anomalies, setAnomalies] = useState<Anomaly[]>([]);
   const [budgetSuggestion, setBudgetSuggestion] = useState<string>('');
   const [platformFilter, setPlatformFilter] = useState<PlatformFilter>('All');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('All');
   const [expandedCampaign, setExpandedCampaign] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState<DateRange>({
     start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
     end: new Date()
   });
+  const [isComparisonOpen, setIsComparisonOpen] = useState(false);
+  const [campaigns, setCampaigns] = useState<Campaign[]>(initialCampaigns);
+  const [campaignTags, setCampaignTags] = useState<Record<string, string[]>>({});
+  const { addToast } = useApp();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -133,8 +142,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ campaigns: initialCampaign
     fetchData();
   }, []);
 
-  const filteredCampaigns = initialCampaigns.filter(c => 
-    platformFilter === 'All' || c.platform === platformFilter
+  const filteredCampaigns = campaigns.filter(c => 
+    (platformFilter === 'All' || c.platform === platformFilter) &&
+    (statusFilter === 'All' || c.status === statusFilter)
   );
 
   const totalSpend = filteredCampaigns.reduce((acc, c) => acc + c.spend, 0);
@@ -145,8 +155,48 @@ export const Dashboard: React.FC<DashboardProps> = ({ campaigns: initialCampaign
     setExpandedCampaign(prev => (prev === campaignId ? null : campaignId));
   };
 
+  // Apply saved view filters
+  const handleApplySavedView = (filters: SavedView['filters']) => {
+    setPlatformFilter(filters.platform);
+    if (filters.status) {
+      setStatusFilter(filters.status);
+    }
+    if (filters.dateRange.start && filters.dateRange.end) {
+      setDateRange({
+        start: new Date(filters.dateRange.start),
+        end: new Date(filters.dateRange.end)
+      });
+    }
+  };
+
+  // Inline edit handlers
+  const handleUpdateCampaignName = (campaignId: string, newName: string) => {
+    setCampaigns(prev => prev.map(c => 
+      c.id === campaignId ? { ...c, name: newName } : c
+    ));
+    addToast({ type: 'success', message: 'Campaign name updated' });
+  };
+
+  const handleUpdateCampaignSpend = (campaignId: string, newSpend: number) => {
+    setCampaigns(prev => prev.map(c => 
+      c.id === campaignId ? { ...c, spend: newSpend, roas: c.chronosTrackedSales / newSpend } : c
+    ));
+    addToast({ type: 'success', message: 'Budget updated' });
+  };
+
+  const handleUpdateCampaignTags = (campaignId: string, newTags: string[]) => {
+    setCampaignTags(prev => ({ ...prev, [campaignId]: newTags }));
+    addToast({ type: 'success', message: 'Tags updated' });
+  };
+
   return (
     <div className="space-y-6">
+      {/* Saved Views & Quick Filters */}
+      <SavedViews 
+        currentFilters={{ platform: platformFilter, dateRange, status: statusFilter }}
+        onApplyView={handleApplySavedView}
+      />
+
       {/* Dashboard Controls */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="flex flex-wrap items-center gap-2">
@@ -163,8 +213,29 @@ export const Dashboard: React.FC<DashboardProps> = ({ campaigns: initialCampaign
               {p}
             </button>
           ))}
+          <div className="w-px h-6 bg-chronos-800 mx-1 hidden sm:block" />
+          {(['All', 'Active', 'Paused'] as StatusFilter[]).map(s => (
+            <button 
+              key={s} 
+              onClick={() => setStatusFilter(s)} 
+              className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
+                statusFilter === s 
+                  ? 'bg-chronos-500 text-white' 
+                  : 'bg-chronos-900 text-gray-400 hover:bg-chronos-800 hover:text-white'
+              }`}
+            >
+              {s}
+            </button>
+          ))}
         </div>
         <div className="flex items-center gap-3">
+          <button
+            onClick={() => setIsComparisonOpen(true)}
+            className="flex items-center gap-2 px-3 py-2 bg-chronos-900 border border-chronos-800 rounded-lg text-sm text-gray-300 hover:border-chronos-600 hover:text-white transition-all"
+          >
+            <GitCompare className="w-4 h-4" />
+            <span className="hidden sm:inline">Compare</span>
+          </button>
           <DateRangePicker value={dateRange} onChange={setDateRange} />
           <ExportDropdown campaigns={filteredCampaigns} timeSeriesData={MOCK_TIME_SERIES} />
         </div>
@@ -219,17 +290,21 @@ export const Dashboard: React.FC<DashboardProps> = ({ campaigns: initialCampaign
         </div>
       </div>
 
-      {/* Campaign Data Table */}
+      {/* Campaign Data Table with Inline Editing */}
       <div className="bg-chronos-900 border border-chronos-800 rounded-xl overflow-hidden">
         <div className="px-4 sm:px-6 py-4 border-b border-chronos-800">
-          <h3 className="text-lg font-semibold text-white">Campaign Performance</h3>
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-semibold text-white">Campaign Performance</h3>
+            <p className="text-xs text-gray-500 hidden sm:block">Double-click to edit names, budgets, or tags</p>
+          </div>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left">
             <thead className="bg-chronos-950 text-gray-400 font-medium">
               <tr>
                 <th className="px-4 sm:px-6 py-3">Campaign Name</th>
-                <th className="px-4 sm:px-6 py-3 text-right hidden sm:table-cell">Spend</th>
+                <th className="px-4 sm:px-6 py-3 hidden md:table-cell">Tags</th>
+                <th className="px-4 sm:px-6 py-3 text-right hidden sm:table-cell">Budget</th>
                 <th className="px-4 sm:px-6 py-3 text-right">Tracked Rev.</th>
                 <th className="px-4 sm:px-6 py-3 text-right">True ROAS</th>
               </tr>
@@ -238,17 +313,38 @@ export const Dashboard: React.FC<DashboardProps> = ({ campaigns: initialCampaign
               {filteredCampaigns.map(campaign => (
                 <React.Fragment key={campaign.id}>
                   <tr onClick={() => campaign.adSets && toggleExpandCampaign(campaign.id)} className={`hover:bg-chronos-800/30 transition-colors group ${campaign.adSets ? 'cursor-pointer' : ''}`}>
-                    <td className="px-4 sm:px-6 py-4 font-medium text-white flex items-center gap-2">
-                      {campaign.adSets && <ChevronDown className={`w-4 h-4 transition-transform flex-shrink-0 ${expandedCampaign === campaign.id ? 'rotate-180' : ''}`} />}
-                      <span className="truncate">{campaign.name}</span>
+                    <td className="px-4 sm:px-6 py-4 font-medium text-white">
+                      <div className="flex items-center gap-2">
+                        {campaign.adSets && <ChevronDown className={`w-4 h-4 transition-transform flex-shrink-0 ${expandedCampaign === campaign.id ? 'rotate-180' : ''}`} />}
+                        <InlineEditText
+                          value={campaign.name}
+                          onSave={(newName) => handleUpdateCampaignName(campaign.id, newName)}
+                          className="min-w-[150px]"
+                        />
+                      </div>
                     </td>
-                    <td className="px-4 sm:px-6 py-4 text-right text-gray-300 hidden sm:table-cell">${campaign.spend.toLocaleString()}</td>
+                    <td className="px-4 sm:px-6 py-4 hidden md:table-cell">
+                      <InlineEditTags
+                        tags={campaignTags[campaign.id] || []}
+                        onSave={(newTags) => handleUpdateCampaignTags(campaign.id, newTags)}
+                      />
+                    </td>
+                    <td className="px-4 sm:px-6 py-4 text-right text-gray-300 hidden sm:table-cell">
+                      <InlineEditNumber
+                        value={campaign.spend}
+                        onSave={(newSpend) => handleUpdateCampaignSpend(campaign.id, newSpend)}
+                        prefix="$"
+                        min={0}
+                        step={100}
+                        className="justify-end"
+                      />
+                    </td>
                     <td className="px-4 sm:px-6 py-4 text-right font-bold text-chronos-400">${campaign.chronosTrackedSales.toLocaleString()}</td>
                     <td className="px-4 sm:px-6 py-4 text-right"><span className={`font-mono ${campaign.roas > 2 ? 'text-green-400' : 'text-yellow-400'}`}>{campaign.roas.toFixed(2)}x</span></td>
                   </tr>
                   {expandedCampaign === campaign.id && campaign.adSets && (
                     <tr className="bg-chronos-950/50">
-                        <td colSpan={4} className="p-0">
+                        <td colSpan={5} className="p-0">
                             <div className="px-6 sm:px-10 py-4">
                                 <AdSetTable adSets={campaign.adSets} />
                             </div>
@@ -261,6 +357,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ campaigns: initialCampaign
           </table>
         </div>
       </div>
+
+      {/* Comparison Mode Modal */}
+      <ComparisonMode 
+        campaigns={campaigns}
+        isOpen={isComparisonOpen}
+        onClose={() => setIsComparisonOpen(false)}
+      />
     </div>
   );
 };
