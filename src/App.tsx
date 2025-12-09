@@ -14,6 +14,7 @@ import { SetupGuide } from './components/SetupGuide';
 import { Toast } from './components/common/Toast';
 import { CommandPalette } from './components/common/CommandPalette';
 import { UserProfile } from './components/common/UserProfile';
+import { MobileNav } from './components/common/MobileNav';
 import { ConversationalAI } from './components/ai/ConversationalAI';
 import { PredictiveInsights } from './components/ai/PredictiveInsights';
 import { FraudDetection } from './components/ai/FraudDetection';
@@ -61,13 +62,12 @@ const Breadcrumbs: React.FC<{ currentView: string }> = ({ currentView }) => {
   const allNavItems = [...NAV_ITEMS, ...AI_NAV_ITEMS, ...SETTINGS_NAV_ITEMS];
   const currentPage = allNavItems.find(item => item.id === currentView);
   
-  // Determine parent category
   let category = 'Analytics';
   if (AI_NAV_ITEMS.find(item => item.id === currentView)) category = 'AI Features';
   if (SETTINGS_NAV_ITEMS.find(item => item.id === currentView)) category = 'Configuration';
   
   return (
-    <nav className="flex items-center gap-2 text-sm text-gray-500 mb-1">
+    <nav className="hidden sm:flex items-center gap-2 text-sm text-gray-500 mb-1">
       <span className="hover:text-gray-300 cursor-pointer">{category}</span>
       <ChevronRight className="w-3 h-3" />
       <span className="text-chronos-400">{currentPage?.label || 'Dashboard'}</span>
@@ -81,7 +81,6 @@ const LastUpdatedIndicator: React.FC<{ lastUpdated: Date | null; onRefresh: () =
 }) => {
   const [, forceUpdate] = useState({});
   
-  // Update every minute
   useEffect(() => {
     const interval = setInterval(() => forceUpdate({}), 60000);
     return () => clearInterval(interval);
@@ -103,7 +102,7 @@ const LastUpdatedIndicator: React.FC<{ lastUpdated: Date | null; onRefresh: () =
   return (
     <div className="flex items-center gap-2 text-xs text-gray-500">
       {lastUpdated && (
-        <span>Updated {getRelativeTime(lastUpdated)}</span>
+        <span className="hidden sm:inline">Updated {getRelativeTime(lastUpdated)}</span>
       )}
       <button
         onClick={onRefresh}
@@ -130,10 +129,8 @@ const AppContent: React.FC = () => {
   const [lastUpdated, setLastUpdated] = useState<Date | null>(new Date());
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Enable keyboard shortcuts
   useKeyboardShortcuts();
 
-  // Sync sidebar collapsed state
   useEffect(() => {
     const handleStorage = () => {
       const collapsed = localStorage.getItem('sidebar_collapsed') === 'true';
@@ -141,7 +138,6 @@ const AppContent: React.FC = () => {
     };
     window.addEventListener('storage', handleStorage);
     
-    // Also listen for direct changes
     const observer = new MutationObserver(() => {
       const collapsed = localStorage.getItem('sidebar_collapsed') === 'true';
       setSidebarCollapsed(collapsed);
@@ -153,7 +149,6 @@ const AppContent: React.FC = () => {
     };
   }, []);
 
-  // Listen for ? key to show shortcuts
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === '?' && !state.cmdkOpen && !state.aiModalOpen) {
@@ -169,7 +164,6 @@ const AppContent: React.FC = () => {
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
-    // Simulate data refresh
     await new Promise(resolve => setTimeout(resolve, 1000));
     setLastUpdated(new Date());
     setIsRefreshing(false);
@@ -189,7 +183,6 @@ const AppContent: React.FC = () => {
       case 'datasources': return <DataSources />;
       case 'setup': return <SetupGuide />;
       case 'settings': return <Settings />;
-      // AI Features
       case 'predictions': return <PredictiveInsights />;
       case 'fraud': return <FraudDetection />;
       case 'budget': return <BudgetOptimizer />;
@@ -197,32 +190,39 @@ const AppContent: React.FC = () => {
     }
   };
 
-  // Combine all nav items to find current page label
   const allNavItems = [...NAV_ITEMS, ...AI_NAV_ITEMS, ...SETTINGS_NAV_ITEMS];
   const currentPage = allNavItems.find(item => item.id === currentView) || NAV_ITEMS[0];
 
   return (
     <>
-      <Sidebar collapsed={sidebarCollapsed} onCollapsedChange={handleSidebarCollapse} />
-      <main className={`flex-1 p-8 transition-all duration-300 ${sidebarCollapsed ? 'ml-16' : 'ml-64'}`}>
-        <header className="flex justify-between items-start mb-8">
+      {/* Desktop Sidebar - Hidden on mobile */}
+      <div className="hidden lg:block">
+        <Sidebar collapsed={sidebarCollapsed} onCollapsedChange={handleSidebarCollapse} />
+      </div>
+
+      {/* Mobile Navigation */}
+      <MobileNav currentPageLabel={currentPage.label} />
+
+      {/* Main Content */}
+      <main className={`flex-1 p-4 sm:p-6 lg:p-8 transition-all duration-300 pt-28 lg:pt-8 ${sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-64'}`}>
+        <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 sm:mb-8">
           <div>
             <Breadcrumbs currentView={currentView} />
-            <h1 className="text-2xl font-bold text-white tracking-tight">{currentPage.label}</h1>
-            <p className="text-sm text-gray-500 mt-1">
+            <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">{currentPage.label}</h1>
+            <p className="text-xs sm:text-sm text-gray-500 mt-1 hidden sm:block">
               Active Profile: <span className="text-chronos-400 font-medium">{currentAccount.name}</span>
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-between sm:justify-end">
              <LastUpdatedIndicator 
                lastUpdated={lastUpdated} 
                onRefresh={handleRefresh}
                isRefreshing={isRefreshing}
              />
-             <div className="w-px h-6 bg-chronos-800" />
+             <div className="hidden sm:block w-px h-6 bg-chronos-800" />
              <button 
                 onClick={() => setShowShortcuts(true)}
-                className="p-2 text-gray-500 hover:text-white hover:bg-chronos-800 rounded-lg transition-all"
+                className="hidden sm:block p-2 text-gray-500 hover:text-white hover:bg-chronos-800 rounded-lg transition-all"
                 title="Keyboard Shortcuts"
              >
                 <Keyboard className="w-4 h-4" />
@@ -239,7 +239,8 @@ const AppContent: React.FC = () => {
                 onClick={() => setAiModalOpen(true)}
                 className="flex items-center gap-2 px-3 py-2 bg-chronos-accent/10 border border-chronos-accent/30 rounded-lg text-sm font-medium text-chronos-accent hover:bg-chronos-accent/20 transition-all"
             >
-              <BrainCircuit className="w-4 h-4" /> Ask Chronos
+              <BrainCircuit className="w-4 h-4" />
+              <span className="hidden sm:inline">Ask Chronos</span>
             </button>
             <UserProfile />
           </div>
