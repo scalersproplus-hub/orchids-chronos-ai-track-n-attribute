@@ -156,8 +156,11 @@ export interface Anomaly {
 // For UI state
 export type ToastNotification = {
   id: string;
-  type: 'success' | 'error' | 'info';
+  type: 'success' | 'error' | 'info' | 'loading';
   message: string;
+  title?: string;
+  duration?: number;
+  onUndo?: () => void;
 };
 
 export type UserProfile = {
