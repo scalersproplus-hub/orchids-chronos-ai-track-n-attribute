@@ -12,6 +12,7 @@ import { ComparisonMode } from './common/ComparisonMode';
 import { InlineEditText, InlineEditNumber, InlineEditTags } from './common/InlineEdit';
 import { AnimatedMetricCard } from './common/AnimatedMetricCard';
 import { StaggerContainer, StaggerItem } from './common/AnimatedBackground';
+import { WelcomeBanner } from './common/WelcomeBanner';
 import { useApp } from '../contexts/AppContext';
 
 interface DashboardProps {
@@ -229,6 +230,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ campaigns: initialCampaign
 
   return (
     <div className="space-y-8">
+      <WelcomeBanner />
+      
       <SavedViews 
         currentFilters={{ platform: platformFilter, dateRange, status: statusFilter }}
         onApplyView={handleApplySavedView}
