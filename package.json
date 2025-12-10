@@ -16,6 +16,7 @@
     "autoprefixer": "^10.4.22",
     "crypto-js": "^4.2.0",
     "estree-walker": "^3.0.3",
+    "framer-motion": "^12.23.25",
     "lucide-react": "^0.555.0",
     "magic-string": "^0.30.21",
     "react": "^19.2.0",
