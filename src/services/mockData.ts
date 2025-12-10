@@ -5,7 +5,7 @@ import { Campaign, CustomerJourney, AccountProfile, TimeSeriesData, AdSet, Anoma
 // Empty workspace for new users
 // ============================================
 export const DEFAULT_ACCOUNT: AccountProfile = {
-  id: `act_${Date.now()}`,
+  id: 'act_default_001',
   name: 'My Workspace',
   websiteUrl: '',
   currency: 'USD',
