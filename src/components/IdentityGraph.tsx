@@ -1,16 +1,105 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 import { CustomerJourney } from '../types';
-import { User, Smartphone, Monitor, GitMerge, CheckCircle, ArrowRight, UserPlus } from 'lucide-react';
+import { User, Smartphone, Monitor, GitMerge, CheckCircle, ArrowRight, UserPlus, Sparkles, Zap, PlayCircle, Fingerprint } from 'lucide-react';
+import { useApp } from '../contexts/AppContext';
 
 interface IdentityGraphProps {
   journeys: CustomerJourney[];
+  isDemo?: boolean;
 }
 
-export const IdentityGraph: React.FC<IdentityGraphProps> = ({ journeys }) => {
+const EmptyIdentityState: React.FC<{ onEnableDemo: () => void }> = ({ onEnableDemo }) => {
+  const { setCurrentView } = useApp();
+  
+  return (
+    <motion.div
+      className="flex flex-col items-center justify-center py-16 px-4"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+    >
+      <motion.div
+        className="w-20 h-20 rounded-2xl flex items-center justify-center mb-6"
+        style={{ 
+          background: 'linear-gradient(135deg, hsl(270 91% 65% / 0.2), hsl(320 80% 60% / 0.1))',
+          border: '1px solid hsl(270 91% 65% / 0.3)'
+        }}
+      >
+        <Fingerprint className="w-10 h-10 text-[hsl(270_91%_75%)]" />
+      </motion.div>
+      
+      <h2 className="text-xl font-bold text-white mb-2 text-center">No Identity Graphs Yet</h2>
+      <p className="text-gray-400 text-center max-w-md mb-6">
+        Identity graphs are built automatically as users interact across devices. Set up tracking to start building unified profiles.
+      </p>
+      
+      <div className="flex gap-3">
+        <motion.button
+          onClick={() => setCurrentView('setup')}
+          className="px-5 py-2.5 rounded-xl font-semibold flex items-center gap-2 text-white"
+          style={{
+            background: 'linear-gradient(135deg, hsl(270 91% 65%), hsl(320 80% 60%))',
+          }}
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+        >
+          <Zap className="w-4 h-4" />
+          Setup Tracking
+        </motion.button>
+        <motion.button
+          onClick={onEnableDemo}
+          className="px-5 py-2.5 rounded-xl font-medium flex items-center gap-2"
+          style={{
+            background: 'hsl(230 20% 12%)',
+            border: '1px solid hsl(170 80% 50% / 0.3)',
+            color: 'hsl(170 80% 55%)'
+          }}
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+        >
+          <PlayCircle className="w-4 h-4" />
+          Try Demo
+        </motion.button>
+      </div>
+    </motion.div>
+  );
+};
+
+export const IdentityGraph: React.FC<IdentityGraphProps> = ({ journeys, isDemo = false }) => {
+  const { state, updateAccount, addToast, setCurrentView } = useApp();
+  const { currentAccount } = state;
   const relevantJourneys = journeys.filter(j => j.identityGraph && j.identityGraph.length > 0);
+
+  const handleEnableDemo = () => {
+    const demoAccount = {
+      ...currentAccount,
+      name: 'Demo Workspace',
+      websiteUrl: 'https://demo-store.com',
+    };
+    updateAccount(demoAccount);
+    addToast({ type: 'success', message: 'Demo mode enabled!' });
+  };
+
+  if (journeys.length === 0 && !isDemo) {
+    return <EmptyIdentityState onEnableDemo={handleEnableDemo} />;
+  }
 
   return (
     <div className="space-y-6 animate-fade-in">
+      {isDemo && (
+        <motion.div 
+          className="glass rounded-xl p-3 flex items-center gap-3"
+          style={{ border: '1px solid hsl(40 95% 55% / 0.2)', background: 'hsl(40 95% 55% / 0.05)' }}
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <Sparkles className="w-4 h-4 text-[hsl(40_95%_55%)]" />
+          <span className="text-sm text-gray-300">
+            <strong className="text-[hsl(40_95%_60%)]">Demo Mode:</strong> Sample identity graphs showing cross-device tracking.
+          </span>
+        </motion.div>
+      )}
+
       <div className="bg-chronos-900 border border-chronos-800 rounded-xl p-6 flex justify-between items-center">
         <div>
             <h2 className="text-xl font-bold text-white mb-2">AI Identity Graph</h2>
@@ -39,7 +128,7 @@ export const IdentityGraph: React.FC<IdentityGraphProps> = ({ journeys }) => {
                     <GraphNode 
                         icon={Smartphone} 
                         title="iPhone Session"
-                        id={`IP: 192.168.1.10`}
+                        id={`IP: 192.168.xxx.xx`}
                         type="probabilistic"
                         confidence={journey.identityGraph?.[0].confidenceScore}
                     />
@@ -47,7 +136,7 @@ export const IdentityGraph: React.FC<IdentityGraphProps> = ({ journeys }) => {
                     <GraphNode 
                         icon={Monitor} 
                         title="Desktop Session"
-                        id={`IP: 24.114.88.21`}
+                        id={`IP: 24.114.xxx.xx`}
                         type="probabilistic"
                         confidence={journey.identityGraph?.[1].confidenceScore}
                     />
@@ -70,6 +159,12 @@ export const IdentityGraph: React.FC<IdentityGraphProps> = ({ journeys }) => {
             </div>
           </div>
         ))}
+        
+        {relevantJourneys.length === 0 && isDemo && (
+          <div className="text-center py-12 text-gray-500">
+            <p>No identity graphs found in demo data. Users with cross-device activity will appear here.</p>
+          </div>
+        )}
       </div>
     </div>
   );
