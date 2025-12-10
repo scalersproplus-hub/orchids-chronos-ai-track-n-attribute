@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { motion, AnimatePresence, useSpring, useMotionValue, useTransform } from 'framer-motion';
+import { motion, useSpring, useMotionValue, useTransform } from 'framer-motion';
 import { LucideIcon, TrendingUp, TrendingDown } from 'lucide-react';
 
 interface SparklineProps {
@@ -8,7 +8,7 @@ interface SparklineProps {
   height?: number;
 }
 
-const Sparkline: React.FC<SparklineProps> = ({ data, color, height = 40 }) => {
+const Sparkline: React.FC<SparklineProps> = ({ data, color, height = 48 }) => {
   const max = Math.max(...data);
   const min = Math.min(...data);
   const range = max - min || 1;
@@ -26,16 +26,17 @@ const Sparkline: React.FC<SparklineProps> = ({ data, color, height = 40 }) => {
     <svg className="w-full" height={height} viewBox={`0 0 100 ${height}`} preserveAspectRatio="none">
       <defs>
         <linearGradient id={`${uniqueId}-area`} x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor={color} stopOpacity="0.4" />
+          <stop offset="0%" stopColor={color} stopOpacity="0.35" />
           <stop offset="100%" stopColor={color} stopOpacity="0" />
         </linearGradient>
         <linearGradient id={`${uniqueId}-line`} x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor={color} stopOpacity="0.3" />
-          <stop offset="50%" stopColor={color} stopOpacity="1" />
-          <stop offset="100%" stopColor={color} stopOpacity="0.3" />
+          <stop offset="0%" stopColor={color} stopOpacity="0.2" />
+          <stop offset="30%" stopColor={color} stopOpacity="0.8" />
+          <stop offset="70%" stopColor={color} stopOpacity="1" />
+          <stop offset="100%" stopColor={color} stopOpacity="0.4" />
         </linearGradient>
         <filter id={`${uniqueId}-glow`}>
-          <feGaussianBlur stdDeviation="2" result="blur" />
+          <feGaussianBlur stdDeviation="1.5" result="blur" />
           <feMerge>
             <feMergeNode in="blur" />
             <feMergeNode in="SourceGraphic" />
@@ -47,29 +48,29 @@ const Sparkline: React.FC<SparklineProps> = ({ data, color, height = 40 }) => {
         fill={`url(#${uniqueId}-area)`}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ duration: 1, delay: 0.5 }}
+        transition={{ duration: 0.8, delay: 0.4 }}
       />
       <motion.polyline
         points={points}
         fill="none"
         stroke={`url(#${uniqueId}-line)`}
-        strokeWidth="2.5"
+        strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
         filter={`url(#${uniqueId}-glow)`}
         initial={{ pathLength: 0, opacity: 0 }}
         animate={{ pathLength: 1, opacity: 1 }}
-        transition={{ duration: 1.5, ease: "easeInOut" }}
+        transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
       />
       <motion.circle
         cx={100}
         cy={height - ((data[data.length - 1] - min) / range) * height}
-        r="3"
+        r="3.5"
         fill={color}
         initial={{ scale: 0 }}
-        animate={{ scale: [1, 1.5, 1] }}
-        transition={{ duration: 2, repeat: Infinity, delay: 1.5 }}
-        style={{ filter: `drop-shadow(0 0 4px ${color})` }}
+        animate={{ scale: [1, 1.3, 1] }}
+        transition={{ duration: 2.5, repeat: Infinity, delay: 1.2 }}
+        style={{ filter: `drop-shadow(0 0 6px ${color})` }}
       />
     </svg>
   );
@@ -90,32 +91,36 @@ interface AnimatedMetricCardProps {
 
 const colorMap = {
   primary: {
-    gradient: 'from-[hsl(270_91%_65%)] to-[hsl(320_80%_60%)]',
-    text: 'hsl(270 91% 75%)',
-    glow: 'hsl(270 91% 65%)',
-    spark: 'hsl(270 91% 65%)',
-    bg: 'hsl(270 91% 65% / 0.1)',
+    gradient: 'from-[hsl(258_89%_66%)] to-[hsl(328_85%_60%)]',
+    text: 'hsl(258 95% 80%)',
+    glow: 'hsl(258 89% 66%)',
+    spark: 'hsl(258 89% 70%)',
+    bg: 'hsl(258 89% 66% / 0.08)',
+    border: 'hsl(258 89% 66% / 0.15)',
   },
   accent: {
-    gradient: 'from-[hsl(170_80%_50%)] to-[hsl(200_80%_50%)]',
-    text: 'hsl(170 80% 55%)',
-    glow: 'hsl(170 80% 50%)',
-    spark: 'hsl(170 80% 50%)',
-    bg: 'hsl(170 80% 50% / 0.1)',
+    gradient: 'from-[hsl(168_84%_52%)] to-[hsl(190_80%_50%)]',
+    text: 'hsl(168 90% 65%)',
+    glow: 'hsl(168 84% 52%)',
+    spark: 'hsl(168 84% 55%)',
+    bg: 'hsl(168 84% 52% / 0.08)',
+    border: 'hsl(168 84% 52% / 0.15)',
   },
   success: {
-    gradient: 'from-[hsl(150_80%_45%)] to-[hsl(170_80%_50%)]',
-    text: 'hsl(150 80% 55%)',
-    glow: 'hsl(150 80% 45%)',
-    spark: 'hsl(150 80% 50%)',
-    bg: 'hsl(150 80% 45% / 0.1)',
+    gradient: 'from-[hsl(152_76%_48%)] to-[hsl(168_84%_52%)]',
+    text: 'hsl(152 80% 60%)',
+    glow: 'hsl(152 76% 48%)',
+    spark: 'hsl(152 76% 55%)',
+    bg: 'hsl(152 76% 48% / 0.08)',
+    border: 'hsl(152 76% 48% / 0.15)',
   },
   warning: {
-    gradient: 'from-[hsl(40_95%_55%)] to-[hsl(25_95%_55%)]',
-    text: 'hsl(40 95% 60%)',
-    glow: 'hsl(40 95% 55%)',
-    spark: 'hsl(40 95% 55%)',
-    bg: 'hsl(40 95% 55% / 0.1)',
+    gradient: 'from-[hsl(38_92%_55%)] to-[hsl(24_95%_60%)]',
+    text: 'hsl(38 95% 65%)',
+    glow: 'hsl(38 92% 55%)',
+    spark: 'hsl(38 92% 60%)',
+    bg: 'hsl(38 92% 55% / 0.08)',
+    border: 'hsl(38 92% 55% / 0.15)',
   },
 };
 
@@ -129,8 +134,9 @@ const AnimatedNumber: React.FC<{ value: string }> = ({ value }) => {
   return (
     <motion.span
       key={value}
-      initial={{ opacity: 0, y: 10 }}
+      initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
       className="metric-value text-white"
     >
       {displayValue}
@@ -154,11 +160,11 @@ export const AnimatedMetricCard: React.FC<AnimatedMetricCardProps> = ({
   const x = useMotionValue(0);
   const y = useMotionValue(0);
 
-  const mouseXSpring = useSpring(x, { stiffness: 300, damping: 30 });
-  const mouseYSpring = useSpring(y, { stiffness: 300, damping: 30 });
+  const mouseXSpring = useSpring(x, { stiffness: 400, damping: 35 });
+  const mouseYSpring = useSpring(y, { stiffness: 400, damping: 35 });
 
-  const rotateX = useTransform(mouseYSpring, [-0.5, 0.5], ['8deg', '-8deg']);
-  const rotateY = useTransform(mouseXSpring, [-0.5, 0.5], ['-8deg', '8deg']);
+  const rotateX = useTransform(mouseYSpring, [-0.5, 0.5], ['6deg', '-6deg']);
+  const rotateY = useTransform(mouseXSpring, [-0.5, 0.5], ['-6deg', '6deg']);
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!ref.current) return;
@@ -179,9 +185,9 @@ export const AnimatedMetricCard: React.FC<AnimatedMetricCardProps> = ({
     <motion.div
       ref={ref}
       className="relative group"
-      initial={{ opacity: 0, y: 30, scale: 0.95 }}
+      initial={{ opacity: 0, y: 24, scale: 0.96 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ duration: 0.6, delay, ease: [0.25, 0.46, 0.45, 0.94] }}
+      transition={{ duration: 0.5, delay, ease: [0.16, 1, 0.3, 1] }}
       onMouseMove={handleMouseMove}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={handleMouseLeave}
@@ -189,92 +195,93 @@ export const AnimatedMetricCard: React.FC<AnimatedMetricCardProps> = ({
         rotateX,
         rotateY,
         transformStyle: 'preserve-3d',
-        perspective: '1000px',
+        perspective: '1200px',
       }}
     >
       <motion.div
-        className="absolute -inset-[1px] rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+        className="absolute -inset-px rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-400"
         style={{
-          background: `linear-gradient(135deg, ${colors.glow} / 0.4, transparent, ${colors.glow} / 0.4)`,
+          background: `linear-gradient(135deg, ${colors.glow} / 0.3, transparent 50%, ${colors.glow} / 0.15)`,
+          filter: 'blur(1px)',
         }}
       />
       
       <motion.div
         className="relative p-6 rounded-2xl overflow-hidden"
         style={{
-          background: `linear-gradient(135deg, 
-            hsl(230 25% 10% / 0.95) 0%, 
-            hsl(230 25% 7% / 0.98) 50%,
-            hsl(230 25% 5% / 1) 100%
+          background: `linear-gradient(145deg, 
+            hsl(222 47% 8% / 0.95) 0%, 
+            hsl(222 47% 6% / 0.98) 50%,
+            hsl(222 47% 5% / 1) 100%
           )`,
-          border: `1px solid hsl(${isHovered ? '270 91% 65%' : '230 20% 15%'} / ${isHovered ? 0.4 : 1})`,
+          border: `1px solid ${isHovered ? colors.border : 'hsl(222 30% 10%)'}`,
           boxShadow: isHovered 
-            ? `0 25px 50px -12px ${colors.glow} / 0.25, 0 0 40px ${colors.glow} / 0.1, inset 0 1px 0 hsl(270 91% 75% / 0.1)`
-            : '0 4px 20px hsl(0 0% 0% / 0.3)',
-          transition: 'border-color 0.3s ease, box-shadow 0.3s ease',
+            ? `0 24px 48px -12px hsl(222 47% 0% / 0.5), 0 0 48px ${colors.glow} / 0.12`
+            : '0 4px 24px hsl(222 47% 0% / 0.4)',
+          transition: 'border-color 0.4s ease, box-shadow 0.4s ease',
           transformStyle: 'preserve-3d',
         }}
       >
         <motion.div
-          className="absolute top-0 left-0 right-0 h-[1px]"
+          className="absolute top-0 left-0 right-0 h-px"
           style={{
-            background: `linear-gradient(90deg, transparent 0%, ${colors.glow} / 0.5 50%, transparent 100%)`,
+            background: `linear-gradient(90deg, transparent 5%, ${colors.glow} / 0.5 30%, ${colors.glow} / 0.6 50%, ${colors.glow} / 0.5 70%, transparent 95%)`,
           }}
           initial={{ scaleX: 0, opacity: 0 }}
           animate={{ scaleX: 1, opacity: 1 }}
-          transition={{ duration: 1, delay: delay + 0.3 }}
+          transition={{ duration: 0.8, delay: delay + 0.2, ease: [0.16, 1, 0.3, 1] }}
         />
 
         <motion.div 
-          className="absolute top-0 right-0 w-40 h-40 rounded-full pointer-events-none"
+          className="absolute -top-20 -right-20 w-48 h-48 rounded-full pointer-events-none"
           style={{ 
-            background: `radial-gradient(circle, ${colors.glow} / ${isHovered ? 0.15 : 0.05}, transparent 70%)`,
-            filter: 'blur(30px)',
-            transform: 'translateZ(10px)',
-          }}
-          animate={{ scale: isHovered ? 1.2 : 1 }}
-          transition={{ duration: 0.3 }}
-        />
-
-        <motion.div 
-          className="absolute bottom-0 left-0 w-32 h-32 rounded-full pointer-events-none"
-          style={{ 
-            background: `radial-gradient(circle, hsl(170 80% 50% / ${isHovered ? 0.1 : 0.03}), transparent 70%)`,
-            filter: 'blur(25px)',
+            background: `radial-gradient(circle, ${colors.glow} / ${isHovered ? 0.12 : 0.04}, transparent 70%)`,
+            filter: 'blur(40px)',
             transform: 'translateZ(5px)',
           }}
-          animate={{ scale: isHovered ? 1.3 : 1 }}
-          transition={{ duration: 0.4 }}
+          animate={{ scale: isHovered ? 1.15 : 1 }}
+          transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
         />
 
-        <div className="relative z-10" style={{ transform: 'translateZ(20px)' }}>
-          <div className="flex justify-between items-start mb-4">
-            <div className="space-y-1">
+        <motion.div 
+          className="absolute -bottom-16 -left-16 w-40 h-40 rounded-full pointer-events-none"
+          style={{ 
+            background: `radial-gradient(circle, hsl(168 84% 52% / ${isHovered ? 0.08 : 0.02}), transparent 70%)`,
+            filter: 'blur(32px)',
+            transform: 'translateZ(3px)',
+          }}
+          animate={{ scale: isHovered ? 1.2 : 1 }}
+          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+        />
+
+        <div className="relative z-10" style={{ transform: 'translateZ(16px)' }}>
+          <div className="flex justify-between items-start mb-5">
+            <div className="space-y-1.5">
               <motion.h4 
-                className="text-sm font-medium text-gray-400"
+                className="text-sm font-medium text-gray-500 tracking-wide"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                transition={{ delay: delay + 0.2 }}
+                transition={{ delay: delay + 0.15 }}
               >
                 {title}
               </motion.h4>
               <motion.div 
-                className="flex items-baseline gap-2"
-                initial={{ opacity: 0, x: -10 }}
+                className="flex items-baseline gap-3"
+                initial={{ opacity: 0, x: -8 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: delay + 0.3 }}
+                transition={{ delay: delay + 0.25 }}
               >
                 <AnimatedNumber value={value} />
                 {trend && (
                   <motion.div 
-                    className={`flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-full ${
+                    className={`flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-lg ${
                       trend.isPositive 
-                        ? 'text-[hsl(150_80%_50%)] bg-[hsl(150_80%_50%_/_0.1)]' 
-                        : 'text-[hsl(0_80%_60%)] bg-[hsl(0_80%_60%_/_0.1)]'
+                        ? 'text-[hsl(152_80%_55%)] bg-[hsl(152_76%_48%_/_0.1)] border border-[hsl(152_76%_48%_/_0.15)]' 
+                        : 'text-[hsl(0_85%_65%)] bg-[hsl(0_84%_60%_/_0.1)] border border-[hsl(0_84%_60%_/_0.15)]'
                     }`}
-                    initial={{ opacity: 0, scale: 0.8 }}
+                    initial={{ opacity: 0, scale: 0.85 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: delay + 0.5 }}
+                    transition={{ delay: delay + 0.4, ease: [0.16, 1, 0.3, 1] }}
                   >
                     {trend.isPositive ? (
                       <TrendingUp className="w-3 h-3" />
@@ -288,23 +295,23 @@ export const AnimatedMetricCard: React.FC<AnimatedMetricCardProps> = ({
             </div>
 
             <motion.div
-              className={`p-3 rounded-xl bg-gradient-to-br ${colors.gradient}`}
+              className={`p-3.5 rounded-xl bg-gradient-to-br ${colors.gradient}`}
               initial={{ scale: 0, rotate: -180 }}
               animate={{ scale: 1, rotate: 0 }}
               transition={{ 
                 type: "spring",
-                stiffness: 200,
-                damping: 15,
-                delay: delay + 0.2
+                stiffness: 250,
+                damping: 18,
+                delay: delay + 0.15
               }}
               whileHover={{ 
-                scale: 1.15,
-                rotate: [0, -10, 10, 0],
-                transition: { duration: 0.4 }
+                scale: 1.1,
+                rotate: [0, -8, 8, 0],
+                transition: { duration: 0.35 }
               }}
               style={{
-                boxShadow: `0 8px 25px ${colors.glow} / 0.4`,
-                transform: 'translateZ(30px)',
+                boxShadow: `0 8px 24px ${colors.glow} / 0.35, inset 0 1px 0 hsl(255 100% 100% / 0.15)`,
+                transform: 'translateZ(24px)',
               }}
             >
               <Icon className="w-5 h-5 text-white" />
@@ -312,30 +319,30 @@ export const AnimatedMetricCard: React.FC<AnimatedMetricCardProps> = ({
           </div>
 
           <motion.div 
-            className="mt-4"
+            className="mt-2"
             style={{ 
-              opacity: isHovered ? 1 : 0.7,
-              transition: 'opacity 0.3s ease',
-              transform: 'translateZ(15px)',
+              opacity: isHovered ? 1 : 0.75,
+              transition: 'opacity 0.4s ease',
+              transform: 'translateZ(12px)',
             }}
             initial={{ opacity: 0 }}
-            animate={{ opacity: 0.7 }}
-            transition={{ delay: delay + 0.6 }}
+            animate={{ opacity: 0.75 }}
+            transition={{ delay: delay + 0.5 }}
           >
             <Sparkline data={sparkData} color={colors.spark} />
           </motion.div>
         </div>
 
         <motion.div
-          className="absolute inset-0 pointer-events-none"
+          className="absolute inset-0 pointer-events-none rounded-2xl"
           style={{
-            background: `linear-gradient(135deg, transparent 40%, ${colors.glow} / 0.03 50%, transparent 60%)`,
-            backgroundSize: '200% 200%',
+            background: `linear-gradient(135deg, transparent 30%, ${colors.glow} / 0.02 50%, transparent 70%)`,
+            backgroundSize: '250% 250%',
           }}
           animate={isHovered ? {
             backgroundPosition: ['0% 0%', '100% 100%'],
           } : {}}
-          transition={{ duration: 1.5, repeat: isHovered ? Infinity : 0 }}
+          transition={{ duration: 2, repeat: isHovered ? Infinity : 0, ease: "linear" }}
         />
       </motion.div>
     </motion.div>
