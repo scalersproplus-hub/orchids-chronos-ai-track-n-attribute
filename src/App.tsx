@@ -21,6 +21,7 @@ import { ConversationalAI } from './components/ai/ConversationalAI';
 import { PredictiveInsights } from './components/ai/PredictiveInsights';
 import { FraudDetection } from './components/ai/FraudDetection';
 import { BudgetOptimizer } from './components/ai/BudgetOptimizer';
+import { CursorGlow } from './components/ui/CursorEffects';
 import { NAV_ITEMS, AI_NAV_ITEMS, SETTINGS_NAV_ITEMS } from './constants';
 import { useKeyboardShortcuts, KEYBOARD_SHORTCUTS } from './hooks/useKeyboardShortcuts';
 import { BrainCircuit, Command, Keyboard, X, ChevronRight, RefreshCw, Sparkles, Zap } from 'lucide-react';
@@ -394,6 +395,7 @@ const App: React.FC = () => {
   return (
     <div className="flex min-h-screen text-gray-200 relative">
       <AnimatedBackground />
+      <CursorGlow />
       <div className="relative z-10 flex w-full">
         {currentAccount.setupComplete ? <AppContent /> : <OnboardingWizard />}
       </div>
