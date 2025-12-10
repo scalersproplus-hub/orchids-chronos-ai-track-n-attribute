@@ -1,5 +1,5 @@
 import { GoogleGenAI, Type } from "@google/genai";
-import { Campaign, AIInsight, Anomaly } from '../types';
+import { Campaign, AIInsight, Anomaly, CustomerJourney } from '../types';
 import { MOCK_ANOMALIES } from './mockData';
 
 // This function remains largely the same but could be enhanced further
@@ -69,4 +69,129 @@ export const getConversationalAnswer = async (query: string, campaigns: Campaign
         console.error("Conversational AI failed:", error);
         return "Sorry, I encountered an error while trying to answer your question.";
     }
+};
+
+export interface LTVPrediction {
+    predictedLTV: number;
+    confidence: number;
+    factors: string[];
+}
+
+export const predictCustomerLTV = async (journey: CustomerJourney): Promise<LTVPrediction> => {
+    try {
+        const apiKey = process.env.API_KEY || '';
+        if (!apiKey) return { predictedLTV: 0, confidence: 0, factors: [] };
+
+        const ai = new GoogleGenAI({ apiKey });
+
+        const prompt = `
+Analyze this customer journey and predict their 12-month LTV:
+
+Current LTV: $${journey.totalLTV}
+Touchpoints: ${journey.touchpoints.length}
+First Seen: ${journey.firstSeen}
+Last Seen: ${journey.lastSeen}
+Device Switches: ${journey.identityGraph?.length || 0}
+Engagement Pattern: ${journey.touchpoints.map(t => t.type).join(' → ')}
+
+Return ONLY a JSON object:
+{
+    "predictedLTV": <number>,
+    "confidence": <0-100>,
+    "factors": ["factor1", "factor2", "factor3"]
+}
+`;
+
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt
+        });
+
+        const text = (response.text || '').replace(/```json|```/g, '').trim();
+        return JSON.parse(text);
+    } catch (error) {
+        console.error("LTV Prediction failed:", error);
+        return { predictedLTV: journey.totalLTV * 1.2, confidence: 60, factors: ['Historical average'] };
+    }
+};
+
+export interface ConversionForecast {
+    revenue: number;
+    roas: number;
+    conversions: number;
+    confidence: number;
+    dailyBreakdown: { date: string; revenue: number; conversions: number }[];
+}
+
+export const predictNextWeekConversions = async (campaigns: Campaign[]): Promise<ConversionForecast> => {
+    try {
+        const apiKey = process.env.API_KEY || '';
+        if (!apiKey) {
+            return generateMockForecast(campaigns);
+        }
+
+        const ai = new GoogleGenAI({ apiKey });
+        
+        const totalSpend = campaigns.reduce((sum, c) => sum + c.spend, 0);
+        const totalRevenue = campaigns.reduce((sum, c) => sum + c.chronosTrackedSales, 0);
+        const avgRoas = totalRevenue / totalSpend;
+
+        const prompt = `
+Analyze these campaign metrics and forecast next 7 days performance:
+
+Total Spend: $${totalSpend}
+Total Revenue: $${totalRevenue}
+Current ROAS: ${avgRoas.toFixed(2)}x
+Active Campaigns: ${campaigns.filter(c => c.status === 'Active').length}
+
+Campaign breakdown:
+${campaigns.map(c => `- ${c.name}: Spend $${c.spend}, Revenue $${c.chronosTrackedSales}, ROAS ${c.roas}x`).join('\n')}
+
+Return ONLY a JSON object:
+{
+    "revenue": <predicted_7_day_revenue>,
+    "roas": <predicted_roas>,
+    "conversions": <predicted_conversions>,
+    "confidence": <0-100>,
+    "dailyBreakdown": [
+        {"date": "Day 1", "revenue": <number>, "conversions": <number>},
+        {"date": "Day 2", "revenue": <number>, "conversions": <number>},
+        {"date": "Day 3", "revenue": <number>, "conversions": <number>},
+        {"date": "Day 4", "revenue": <number>, "conversions": <number>},
+        {"date": "Day 5", "revenue": <number>, "conversions": <number>},
+        {"date": "Day 6", "revenue": <number>, "conversions": <number>},
+        {"date": "Day 7", "revenue": <number>, "conversions": <number>}
+    ]
+}
+`;
+
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt
+        });
+
+        const text = (response.text || '').replace(/```json|```/g, '').trim();
+        return JSON.parse(text);
+    } catch (error) {
+        console.error("Conversion forecast failed:", error);
+        return generateMockForecast(campaigns);
+    }
+};
+
+const generateMockForecast = (campaigns: Campaign[]): ConversionForecast => {
+    const totalRevenue = campaigns.reduce((sum, c) => sum + c.chronosTrackedSales, 0);
+    const totalSpend = campaigns.reduce((sum, c) => sum + c.spend, 0);
+    const weeklyRevenue = totalRevenue * 1.1;
+    
+    return {
+        revenue: Math.round(weeklyRevenue),
+        roas: totalSpend > 0 ? parseFloat((weeklyRevenue / totalSpend).toFixed(2)) : 0,
+        conversions: Math.round(campaigns.reduce((sum, c) => sum + c.leads, 0) * 1.1),
+        confidence: 72,
+        dailyBreakdown: Array.from({ length: 7 }, (_, i) => ({
+            date: `Day ${i + 1}`,
+            revenue: Math.round(weeklyRevenue / 7 * (0.85 + Math.random() * 0.3)),
+            conversions: Math.round(10 + Math.random() * 15)
+        }))
+    };
 };
