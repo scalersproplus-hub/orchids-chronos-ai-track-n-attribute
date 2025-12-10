@@ -111,14 +111,14 @@ export const AppProvider: React.FC<{children: ReactNode}> = ({ children }) => {
             if (stored) {
                 const parsed = JSON.parse(stored);
                 return {
-                    accounts: parsed.accounts || MOCK_ACCOUNTS,
-                    lastAccountId: parsed.lastAccountId || MOCK_ACCOUNTS[0].id
+                    accounts: parsed.accounts || defaultAccounts,
+                    lastAccountId: parsed.lastAccountId || defaultAccounts[0].id
                 };
             }
         } catch (e) {
             console.error('Error loading stored data:', e);
         }
-        return { accounts: MOCK_ACCOUNTS, lastAccountId: MOCK_ACCOUNTS[0].id };
+        return { accounts: defaultAccounts, lastAccountId: defaultAccounts[0].id };
     };
 
     const storedData = getStoredData();
