@@ -1,39 +1,56 @@
 import { Campaign, CustomerJourney, AccountProfile, TimeSeriesData, AdSet, Anomaly } from '../types';
 
-// Default empty account - user fills in real values
-export const MOCK_ACCOUNTS: AccountProfile[] = [
-  {
-    id: 'act_001',
-    name: 'My Workspace',
-    websiteUrl: '',
-    currency: 'USD',
-    timezone: 'UTC',
-    setupComplete: false,
-    
-    // All credentials empty by default - user must configure
-    metaPixelId: '',
-    metaCapiToken: '',
-    metaTestCode: '',
-    
-    googleConversionId: '',
-    googleConversionLabel: '',
-    googleDeveloperToken: '',
-    googleCustomerId: '',
-    
-    // CNAME tracking domain (for first-party tracking)
-    trackingDomain: '',
-    
-    supabaseConfig: {
-      url: '',
-      key: '',
-    }
-  },
-];
+// ============================================
+// PRODUCTION DEFAULTS
+// Empty workspace for new users
+// ============================================
+export const DEFAULT_ACCOUNT: AccountProfile = {
+  id: `act_${Date.now()}`,
+  name: 'My Workspace',
+  websiteUrl: '',
+  currency: 'USD',
+  timezone: 'UTC',
+  setupComplete: false,
+  
+  metaPixelId: '',
+  metaCapiToken: '',
+  metaTestCode: '',
+  
+  googleConversionId: '',
+  googleConversionLabel: '',
+  googleDeveloperToken: '',
+  googleCustomerId: '',
+  
+  trackingDomain: '',
+  
+  supabaseConfig: {
+    url: '',
+    key: '',
+  }
+};
+
+// This is used for localStorage initialization
+export const MOCK_ACCOUNTS: AccountProfile[] = [DEFAULT_ACCOUNT];
 
 // ============================================
-// EXAMPLE VALUES
+// DEMO MODE DETECTION
+// ============================================
+export const isDemoMode = (account: AccountProfile): boolean => {
+  return account.name === 'Demo Workspace' || 
+         account.websiteUrl === 'https://demo-store.com';
+};
+
+export const hasRealIntegrations = (account: AccountProfile): boolean => {
+  return !!(
+    account.metaPixelId || 
+    account.googleCustomerId || 
+    (account.supabaseConfig?.url && account.supabaseConfig?.key)
+  );
+};
+
+// ============================================
+// EXAMPLE VALUES FOR UI HINTS
 // These are shown in the UI as placeholders/hints
-// Users should replace with their own credentials
 // ============================================
 export const EXAMPLE_VALUES = {
   meta: {
@@ -57,13 +74,12 @@ export const EXAMPLE_VALUES = {
   supabase: {
     url: 'https://abcdefgh.supabase.co',
     urlHint: 'Found in Supabase Dashboard → Settings → API → Project URL',
-    key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI...',
+    key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
     keyHint: 'Found in Supabase Dashboard → Settings → API → anon public key',
   },
   trackingDomain: 'track.yourdomain.com',
   trackingDomainHint: 'A subdomain that points to our tracking servers via CNAME',
   
-  // Webhook examples
   webhook: {
     shopify: 'https://yourstore.myshopify.com/admin/api/webhooks',
     stripe: 'https://api.stripe.com/v1/webhook_endpoints',
@@ -111,16 +127,20 @@ export const validateField = (field: string, value: string): { valid: boolean; m
   }
 };
 
-const MOCK_ADSETS_FB1: AdSet[] = [
-    { id: 'adset_fb1_1', name: 'Interests - Fitness Gurus', spend: 7000, chronosTrackedSales: 15000, roas: 2.14 },
-    { id: 'adset_fb1_2', name: 'Lookalikes - 1% Purchasers', spend: 5500, chronosTrackedSales: 13500, roas: 2.45 },
+// ============================================
+// DEMO DATA
+// Only shown in Demo Mode for exploration
+// ============================================
+const DEMO_ADSETS_FB1: AdSet[] = [
+  { id: 'adset_fb1_1', name: 'Interests - Fitness Gurus', spend: 7000, chronosTrackedSales: 15000, roas: 2.14 },
+  { id: 'adset_fb1_2', name: 'Lookalikes - 1% Purchasers', spend: 5500, chronosTrackedSales: 13500, roas: 2.45 },
 ];
-const MOCK_ADSETS_GGL2: AdSet[] = [
-    { id: 'adset_ggl2_1', name: 'Brand Keywords - Exact Match', spend: 2800, chronosTrackedSales: 4000, roas: 1.43 },
-    { id: 'adset_ggl2_2', name: 'Competitor Keywords - Broad', spend: 1400, chronosTrackedSales: 1500, roas: 1.07 },
+const DEMO_ADSETS_GGL2: AdSet[] = [
+  { id: 'adset_ggl2_1', name: 'Brand Keywords - Exact Match', spend: 2800, chronosTrackedSales: 4000, roas: 1.43 },
+  { id: 'adset_ggl2_2', name: 'Competitor Keywords - Broad', spend: 1400, chronosTrackedSales: 1500, roas: 1.07 },
 ];
 
-export const MOCK_CAMPAIGNS: Campaign[] = [
+export const DEMO_CAMPAIGNS: Campaign[] = [
   {
     id: 'cmp_fb_001',
     name: 'Top of Funnel - Cold Traffic - US',
@@ -132,7 +152,7 @@ export const MOCK_CAMPAIGNS: Campaign[] = [
     clicks: 5200,
     leads: 850,
     roas: 2.28,
-    adSets: MOCK_ADSETS_FB1,
+    adSets: DEMO_ADSETS_FB1,
   },
   {
     id: 'cmp_ggl_002',
@@ -145,7 +165,7 @@ export const MOCK_CAMPAIGNS: Campaign[] = [
     clicks: 1200,
     leads: 150,
     roas: 1.31,
-    adSets: MOCK_ADSETS_GGL2,
+    adSets: DEMO_ADSETS_GGL2,
   },
   {
     id: 'cmp_tik_003',
@@ -161,17 +181,17 @@ export const MOCK_CAMPAIGNS: Campaign[] = [
   },
 ];
 
-export const MOCK_JOURNEYS: CustomerJourney[] = [
+export const DEMO_JOURNEYS: CustomerJourney[] = [
   {
     id: 'cust_992',
-    customerName: 'Sarah Jenkins',
-    email: 's.jenkins@example.com',
-    phone: '+15550123456',
+    customerName: 'Sarah J.',
+    email: 's***@example.com',
+    phone: '+1555*****56',
     totalLTV: 297.00,
-    firstSeen: '2023-10-15',
-    lastSeen: '2023-10-28',
+    firstSeen: '2024-10-15',
+    lastSeen: '2024-10-28',
     tags: ['High Value', 'Returning'],
-    ipAddress: '192.158.1.38',
+    ipAddress: '192.158.xxx.xxx',
     location: 'Austin, TX, US',
     userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X)',
     fbp: 'fb.1.1697364000123',
@@ -193,13 +213,13 @@ export const MOCK_JOURNEYS: CustomerJourney[] = [
   },
   {
     id: 'cust_994',
-    customerName: 'Alex Rivera',
-    email: 'alex.r@webmail.com',
-    phone: '+15552345678',
+    customerName: 'Alex R.',
+    email: 'a***@webmail.com',
+    phone: '+1555*****78',
     totalLTV: 75.50,
-    firstSeen: '2023-10-10',
-    lastSeen: '2023-10-25',
-    ipAddress: '24.114.88.21',
+    firstSeen: '2024-10-10',
+    lastSeen: '2024-10-25',
+    ipAddress: '24.114.xxx.xxx',
     location: 'Miami, FL, US',
     userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
     fbp: 'fb.1.1698228000111', fbc: '',
@@ -211,9 +231,9 @@ export const MOCK_JOURNEYS: CustomerJourney[] = [
     browser: 'Edge 118.0',
     chronosFingerprintId: 'fp_c8d9e2f1a7b3c8d9e2f1a7b3',
     identityGraph: [
-        { deviceId: 'iPhone-Safari', fingerprintId: 'fp_c8d9e2f1a7b3c8d9e2f1a7b3', timestamp: '2023-10-10', type: 'probabilistic', confidenceScore: 92 },
-        { deviceId: 'Win11-Edge', fingerprintId: 'fp_c8d9e2f1a7b3c8d9e2f1a7b3', timestamp: '2023-10-24', type: 'probabilistic', confidenceScore: 95 },
-        { deviceId: 'alex.r@webmail.com', fingerprintId: 'fp_c8d9e2f1a7b3c8d9e2f1a7b3', timestamp: '2023-10-25', type: 'deterministic', confidenceScore: 100 }
+      { deviceId: 'iPhone-Safari', fingerprintId: 'fp_c8d9e2f1a7b3c8d9e2f1a7b3', timestamp: '2024-10-10', type: 'probabilistic', confidenceScore: 92 },
+      { deviceId: 'Win11-Edge', fingerprintId: 'fp_c8d9e2f1a7b3c8d9e2f1a7b3', timestamp: '2024-10-24', type: 'probabilistic', confidenceScore: 95 },
+      { deviceId: 'a***@webmail.com', fingerprintId: 'fp_c8d9e2f1a7b3c8d9e2f1a7b3', timestamp: '2024-10-25', type: 'deterministic', confidenceScore: 100 }
     ],
     touchpoints: [
       { id: 'tp_8', type: 'Ad Click', source: 'Top of Funnel - Cold Traffic - US', timestamp: 'Oct 10, 08:00 PM', device: 'Mobile', value: 0 },
@@ -224,7 +244,7 @@ export const MOCK_JOURNEYS: CustomerJourney[] = [
   },
 ];
 
-export const MOCK_TIME_SERIES: TimeSeriesData[] = Array.from({ length: 30 }, (_, i) => {
+export const DEMO_TIME_SERIES: TimeSeriesData[] = Array.from({ length: 30 }, (_, i) => {
   const date = new Date();
   date.setDate(date.getDate() - (29 - i));
   const spend = 500 + Math.random() * 300 + Math.sin(i / 5) * 150;
@@ -236,7 +256,34 @@ export const MOCK_TIME_SERIES: TimeSeriesData[] = Array.from({ length: 30 }, (_,
   };
 });
 
-export const MOCK_ANOMALIES: Anomaly[] = [
-    { id: 'anom_1', severity: 'High', metric: 'ROAS', change: '-45%', description: 'ROAS dropped significantly despite a 20% increase in spend.', campaignId: 'cmp_ggl_002' },
-    { id: 'anom_2', severity: 'Medium', metric: 'Spend', change: '+75%', description: 'Ad spend ramped up much faster than the daily budget.', campaignId: 'cmp_fb_001' },
+export const DEMO_ANOMALIES: Anomaly[] = [
+  { id: 'anom_1', severity: 'High', metric: 'ROAS', change: '-45%', description: 'ROAS dropped significantly despite a 20% increase in spend.', campaignId: 'cmp_ggl_002' },
+  { id: 'anom_2', severity: 'Medium', metric: 'Spend', change: '+75%', description: 'Ad spend ramped up much faster than the daily budget.', campaignId: 'cmp_fb_001' },
 ];
+
+// Legacy exports for backward compatibility
+export const MOCK_CAMPAIGNS = DEMO_CAMPAIGNS;
+export const MOCK_JOURNEYS = DEMO_JOURNEYS;
+export const MOCK_TIME_SERIES = DEMO_TIME_SERIES;
+export const MOCK_ANOMALIES = DEMO_ANOMALIES;
+
+// ============================================
+// EMPTY STATES
+// For production when no data exists
+// ============================================
+export const EMPTY_CAMPAIGNS: Campaign[] = [];
+export const EMPTY_JOURNEYS: CustomerJourney[] = [];
+export const EMPTY_TIME_SERIES: TimeSeriesData[] = [];
+export const EMPTY_ANOMALIES: Anomaly[] = [];
+
+// Helper to get appropriate data based on mode
+export const getDataForMode = (account: AccountProfile) => {
+  const isDemo = isDemoMode(account);
+  return {
+    campaigns: isDemo ? DEMO_CAMPAIGNS : EMPTY_CAMPAIGNS,
+    journeys: isDemo ? DEMO_JOURNEYS : EMPTY_JOURNEYS,
+    timeSeries: isDemo ? DEMO_TIME_SERIES : EMPTY_TIME_SERIES,
+    anomalies: isDemo ? DEMO_ANOMALIES : EMPTY_ANOMALIES,
+    isDemo,
+  };
+};
