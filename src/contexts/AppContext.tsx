@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useReducer, ReactNode, Dispatch } from 'react';
 import { AccountProfile, ToastNotification, UserProfile } from '../types';
-import { MOCK_ACCOUNTS } from '../services/mockData';
+import { DEFAULT_ACCOUNT } from '../services/mockData';
 
 interface AppState {
     accounts: AccountProfile[];
@@ -24,14 +24,16 @@ type Action =
     | { type: 'SET_CMDK_OPEN'; payload: boolean }
     | { type: 'SET_AI_MODAL_OPEN'; payload: boolean };
 
+const defaultAccounts = [DEFAULT_ACCOUNT];
+
 const initialState: AppState = {
-    accounts: MOCK_ACCOUNTS,
-    currentAccount: MOCK_ACCOUNTS[0],
+    accounts: defaultAccounts,
+    currentAccount: defaultAccounts[0],
     currentView: 'dashboard',
     toasts: [],
     cmdkOpen: false,
     aiModalOpen: false,
-    user: { name: 'Demo User', email: 'demo@chronos.ai', avatarUrl: '' },
+    user: { name: '', email: '', avatarUrl: '' },
 };
 
 const appReducer = (state: AppState, action: Action): AppState => {
