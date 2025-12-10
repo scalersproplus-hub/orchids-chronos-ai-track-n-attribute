@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Globe, Server, Megaphone, FileText, Database, Zap, PlayCircle, BookOpen, Save } from 'lucide-react';
+import { Globe, Server, Megaphone, FileText, Database, Zap, PlayCircle, BookOpen, Save, Shield } from 'lucide-react';
 
 // Import the new modular tab components
 import { SimulatorTab } from './tracking/SimulatorTab';
@@ -10,10 +10,11 @@ import { InstantFormsTab } from './tracking/InstantFormsTab';
 import { DbSchemaTab } from './tracking/DbSchemaTab';
 import { FunnelCloseTab } from './tracking/FunnelCloseTab';
 import { SetupGuideTab } from './tracking/SetupGuideTab';
+import { FirstPartyDomainTab } from './tracking/FirstPartyDomainTab';
 import { useApp } from '../contexts/AppContext';
 
 
-type ActiveTab = 'guide' | 'simulator' | 'client' | 'server' | 'google' | 'forms' | 'database' | 'offline';
+type ActiveTab = 'guide' | 'domain' | 'simulator' | 'client' | 'server' | 'google' | 'forms' | 'database' | 'offline';
 
 export const TrackingSetup: React.FC = () => {
   const { currentAccount, updateAccount } = useApp();
@@ -32,6 +33,7 @@ export const TrackingSetup: React.FC = () => {
 
   const TABS = [
       { id: 'guide', label: 'Setup Guide', icon: BookOpen },
+      { id: 'domain', label: '1st Party Domain', icon: Shield },
       { id: 'simulator', label: 'E2E Simulator', icon: PlayCircle },
       { id: 'client', label: 'Browser Pixel', icon: Globe },
       { id: 'server', label: 'Meta CAPI', icon: Server },
@@ -44,6 +46,7 @@ export const TrackingSetup: React.FC = () => {
   const renderActiveTab = () => {
     switch (activeTab) {
       case 'guide': return <SetupGuideTab />;
+      case 'domain': return <FirstPartyDomainTab />;
       case 'simulator': return <SimulatorTab />;
       case 'client': return <BrowserPixelTab />;
       case 'server': return <MetaCapiTab />;
