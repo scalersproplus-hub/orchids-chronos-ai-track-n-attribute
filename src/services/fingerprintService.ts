@@ -36,6 +36,18 @@ export class FingerprintService {
         // 7. Fonts Detection
         components.push(await this.getFontsFingerprint());
 
+        // 8. Advanced: Battery API
+        components.push(await this.getBatteryFingerprint());
+
+        // 9. Advanced: Media Devices
+        components.push(await this.getMediaDevicesFingerprint());
+
+        // 10. Advanced: Hardware Memory
+        components.push(this.getHardwareFingerprint());
+
+        // 11. Advanced: Permissions State
+        components.push(await this.getPermissionsFingerprint());
+
         // Combine all components and hash
         const combined = components.join('|');
         const fingerprint = await this.sha256(combined);
@@ -246,6 +258,58 @@ export class FingerprintService {
         } catch (e) {
             return 'fonts-error';
         }
+    }
+
+    private async getBatteryFingerprint(): Promise<string> {
+        try {
+            const battery = await (navigator as any).getBattery();
+            return [
+                battery.level,
+                battery.charging,
+                battery.chargingTime,
+                battery.dischargingTime
+            ].join('|');
+        } catch {
+            return 'no-battery-api';
+        }
+    }
+
+    private async getMediaDevicesFingerprint(): Promise<string> {
+        try {
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            const counts = {
+                audioinput: devices.filter(d => d.kind === 'audioinput').length,
+                videoinput: devices.filter(d => d.kind === 'videoinput').length,
+                audiooutput: devices.filter(d => d.kind === 'audiooutput').length
+            };
+            return `audio:${counts.audioinput}|video:${counts.videoinput}|speakers:${counts.audiooutput}`;
+        } catch {
+            return 'no-media-devices';
+        }
+    }
+
+    private getHardwareFingerprint(): string {
+        const memory = (performance as any).memory;
+        return [
+            navigator.hardwareConcurrency || 'unknown',
+            memory ? memory.jsHeapSizeLimit : 'unknown',
+            memory ? memory.totalJSHeapSize : 'unknown'
+        ].join('|');
+    }
+
+    private async getPermissionsFingerprint(): Promise<string> {
+        const perms = ['geolocation', 'notifications', 'camera', 'microphone'];
+        const results = await Promise.all(
+            perms.map(async (name) => {
+                try {
+                    const result = await navigator.permissions.query({ name: name as PermissionName });
+                    return `${name}:${result.state}`;
+                } catch {
+                    return `${name}:unsupported`;
+                }
+            })
+        );
+        return results.join('|');
     }
 
     /**
