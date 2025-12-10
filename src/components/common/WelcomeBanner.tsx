@@ -6,6 +6,7 @@ import {
   Play, Settings
 } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
+import { isDemoMode } from '../../services/mockData';
 
 interface SetupTask {
   id: string;
@@ -24,11 +25,12 @@ export const WelcomeBanner: React.FC = () => {
   const [aiAvailable, setAiAvailable] = useState(false);
 
   const dismissKey = `welcome_banner_dismissed_${currentAccount.id}`;
+  const isDemo = isDemoMode(currentAccount);
 
   useEffect(() => {
-    const isDismissed = localStorage.getItem(dismissKey) === 'true';
-    setDismissed(isDismissed);
-    setAiAvailable(!!import.meta.env.VITE_GEMINI_API_KEY || !!process.env.API_KEY);
+    const isDismissedStored = localStorage.getItem(dismissKey) === 'true';
+    setDismissed(isDismissedStored);
+    setAiAvailable(!!import.meta.env.VITE_GEMINI_API_KEY);
   }, [dismissKey]);
 
   const handleDismiss = () => {
