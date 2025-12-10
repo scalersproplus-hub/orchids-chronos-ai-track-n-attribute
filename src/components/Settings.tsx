@@ -5,7 +5,7 @@ import {
   Settings as SettingsIcon, Database, Facebook, Chrome, Globe, 
   Check, X, Loader2, Eye, EyeOff, Copy, ExternalLink, 
   AlertTriangle, CheckCircle, Info, Zap, Shield, Server,
-  RefreshCw, AlertCircle, HelpCircle
+  RefreshCw, AlertCircle, HelpCircle, BrainCircuit, Sparkles
 } from 'lucide-react';
 
 type ConnectionStatus = 'idle' | 'testing' | 'success' | 'error';
@@ -31,7 +31,7 @@ export const Settings: React.FC = () => {
     meta: 'idle',
     google: 'idle'
   });
-  const [activeTab, setActiveTab] = useState<'integrations' | 'tracking' | 'advanced'>('integrations');
+  const [activeTab, setActiveTab] = useState<'integrations' | 'ai' | 'tracking' | 'advanced'>('integrations');
   const [hasChanges, setHasChanges] = useState(false);
   const [validation, setValidation] = useState<ValidationState>({});
   const [dnsStatus, setDnsStatus] = useState<'idle' | 'checking' | 'verified' | 'failed'>('idle');
@@ -213,6 +213,7 @@ export const Settings: React.FC = () => {
 
   const tabs = [
     { id: 'integrations', label: 'Integrations', icon: Zap },
+    { id: 'ai', label: 'AI Features', icon: BrainCircuit },
     { id: 'tracking', label: 'Tracking Domain', icon: Globe },
     { id: 'advanced', label: 'Advanced', icon: Server },
   ];
@@ -458,6 +459,67 @@ export const Settings: React.FC = () => {
               </div>
             </SettingsSection>
           </>
+        )}
+
+        {activeTab === 'ai' && (
+          <SettingsSection 
+            title="AI Features" 
+            icon={BrainCircuit}
+          >
+            <div className="space-y-4">
+              <div className="bg-gradient-to-r from-purple-900/30 to-chronos-900 border border-purple-500/30 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <div className="p-2 bg-purple-500/20 rounded-lg flex-shrink-0">
+                    <Sparkles className="w-5 h-5 text-purple-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-white">AI-Powered Analytics</h3>
+                    <p className="text-gray-400 text-sm mt-1">
+                      Get intelligent insights from your tracking data with AI.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-black/50 border border-chronos-700 rounded-lg p-4">
+                  <h4 className="font-medium text-white mb-3">AI Recommendations</h4>
+                  <ul className="text-sm text-gray-400 space-y-2">
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="w-4 h-4 text-green-400 mt-1 flex-shrink-0" />
+                      <span>Optimize conversion funnels with AI suggestions</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="w-4 h-4 text-green-400 mt-1 flex-shrink-0" />
+                      <span>Identify high-performing landing pages</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="w-4 h-4 text-green-400 mt-1 flex-shrink-0" />
+                      <span>Generate personalized email sequences</span>
+                    </li>
+                  </ul>
+                </div>
+
+                <div className="bg-black/50 border border-chronos-700 rounded-lg p-4">
+                  <h4 className="font-medium text-white mb-3">AI Insights</h4>
+                  <ul className="text-sm text-gray-400 space-y-2">
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="w-4 h-4 text-green-400 mt-1 flex-shrink-0" />
+                      <span>Automatically detect conversion patterns</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="w-4 h-4 text-green-400 mt-1 flex-shrink-0" />
+                      <span>Forecast future conversion trends</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="w-4 h-4 text-green-400 mt-1 flex-shrink-0" />
+                      <span>Identify drop-off points in user journey</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </SettingsSection>
         )}
 
         {activeTab === 'tracking' && (
