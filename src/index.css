@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+@import url('https://api.fontshare.com/v2/css?f[]=clash-display@200,300,400,500,600,700&f[]=satoshi@300,400,500,700,900&f[]=cabinet-grotesk@100,200,300,400,500,700,800,900&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,42 +6,44 @@
 
 @layer base {
   :root {
-    --background: 230 25% 5%;
+    --background: 222 47% 4%;
     --foreground: 210 40% 98%;
-    --card: 230 25% 7%;
+    --card: 222 47% 6%;
     --card-foreground: 210 40% 98%;
-    --popover: 230 25% 7%;
+    --popover: 222 47% 6%;
     --popover-foreground: 210 40% 98%;
-    --primary: 270 91% 65%;
+    --primary: 258 89% 66%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 230 20% 15%;
+    --secondary: 222 30% 12%;
     --secondary-foreground: 210 40% 98%;
-    --muted: 230 20% 15%;
+    --muted: 222 30% 12%;
     --muted-foreground: 215 20% 55%;
-    --accent: 170 80% 50%;
-    --accent-foreground: 230 25% 5%;
-    --destructive: 0 72% 51%;
+    --accent: 168 84% 52%;
+    --accent-foreground: 222 47% 4%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
-    --border: 230 20% 12%;
-    --input: 230 20% 12%;
-    --ring: 270 91% 65%;
-    --radius: 0.75rem;
+    --border: 222 30% 10%;
+    --input: 222 30% 10%;
+    --ring: 258 89% 66%;
+    --radius: 1rem;
     
-    --chronos-950: 230 25% 5%;
-    --chronos-900: 230 25% 8%;
-    --chronos-800: 230 20% 12%;
-    --chronos-700: 230 15% 22%;
-    --chronos-600: 230 12% 35%;
-    --chronos-500: 270 91% 65%;
-    --chronos-400: 270 95% 75%;
-    --chronos-accent: 170 80% 50%;
-    --chronos-accent-2: 320 80% 60%;
-    --chronos-success: 150 80% 45%;
-    --chronos-danger: 0 80% 55%;
-    --chronos-warning: 40 95% 55%;
+    --surface-1: 222 47% 4%;
+    --surface-2: 222 47% 6%;
+    --surface-3: 222 30% 10%;
+    --surface-4: 222 25% 14%;
     
-    --glow-primary: 270 91% 65%;
-    --glow-accent: 170 80% 50%;
+    --brand-purple: 258 89% 66%;
+    --brand-purple-light: 258 95% 78%;
+    --brand-cyan: 168 84% 52%;
+    --brand-cyan-light: 168 90% 65%;
+    --brand-magenta: 328 85% 60%;
+    --brand-orange: 24 95% 60%;
+    --brand-success: 152 76% 48%;
+    --brand-warning: 38 92% 55%;
+    --brand-danger: 0 84% 60%;
+    
+    --shadow-glow: 258 89% 66%;
+    --shadow-cyan: 168 84% 52%;
   }
 }
 
@@ -50,18 +52,34 @@
     @apply border-border;
   }
 
+  html {
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
   body {
-    @apply bg-[hsl(var(--chronos-950))] text-foreground antialiased;
-    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    @apply bg-[hsl(var(--surface-1))] text-foreground;
+    font-family: 'Satoshi', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-weight: 400;
+    letter-spacing: -0.01em;
   }
 
   h1, h2, h3, h4, h5, h6, .heading {
-    font-family: 'Syne', sans-serif;
-    letter-spacing: -0.02em;
+    font-family: 'Clash Display', sans-serif;
+    font-weight: 600;
+    letter-spacing: -0.03em;
   }
 
   .mono, code, pre, .metric-value, .data-value {
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'Cabinet Grotesk', 'JetBrains Mono', monospace;
+    font-feature-settings: "tnum";
+  }
+
+  ::selection {
+    background: hsl(258 89% 66% / 0.3);
+    color: white;
   }
 
   ::-webkit-scrollbar {
@@ -74,58 +92,66 @@
   }
   
   ::-webkit-scrollbar-thumb {
-    background: linear-gradient(180deg, hsl(270 91% 65% / 0.4), hsl(170 80% 50% / 0.4));
+    background: linear-gradient(180deg, hsl(258 89% 66% / 0.4), hsl(168 84% 52% / 0.3));
     border-radius: 100px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
   }
   
   ::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(180deg, hsl(270 91% 65% / 0.6), hsl(170 80% 50% / 0.6));
+    background: linear-gradient(180deg, hsl(258 89% 66% / 0.6), hsl(168 84% 52% / 0.5));
+    background-clip: padding-box;
   }
 }
 
 @layer utilities {
   .animate-fade-in {
-    animation: fadeIn 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+    animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
 
   .animate-slide-up {
-    animation: slideUp 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+    animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
 
   .animate-scale-in {
-    animation: scaleIn 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+    animation: scaleIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
 
   .animate-pulse-glow {
-    animation: pulseGlow 3s ease-in-out infinite;
+    animation: pulseGlow 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
 
   .animate-float {
-    animation: float 6s ease-in-out infinite;
+    animation: float 8s ease-in-out infinite;
   }
 
   .animate-gradient {
-    background-size: 300% 300%;
-    animation: gradientShift 8s ease infinite;
+    background-size: 400% 400%;
+    animation: gradientShift 12s ease infinite;
   }
 
   .animate-shimmer {
-    animation: shimmer 2s linear infinite;
+    background-size: 200% 100%;
+    animation: shimmer 2.5s ease-in-out infinite;
   }
 
   .animate-orbit {
-    animation: orbit 20s linear infinite;
+    animation: orbit 25s linear infinite;
+  }
+
+  .animate-aurora {
+    animation: aurora 15s ease-in-out infinite alternate;
   }
 
   @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
   }
 
   @keyframes slideUp {
     from { 
       opacity: 0;
-      transform: translateY(20px);
+      transform: translateY(24px);
     }
     to { 
       opacity: 1;
@@ -136,7 +162,7 @@
   @keyframes scaleIn {
     from { 
       opacity: 0;
-      transform: scale(0.9);
+      transform: scale(0.92);
     }
     to { 
       opacity: 1;
@@ -146,85 +172,144 @@
 
   @keyframes pulseGlow {
     0%, 100% { 
-      filter: drop-shadow(0 0 0 hsl(270 91% 65% / 0));
+      filter: drop-shadow(0 0 0 hsl(258 89% 66% / 0));
     }
     50% { 
-      filter: drop-shadow(0 0 20px hsl(270 91% 65% / 0.5));
+      filter: drop-shadow(0 0 32px hsl(258 89% 66% / 0.5));
     }
   }
 
   @keyframes float {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-10px); }
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    33% { transform: translateY(-8px) rotate(1deg); }
+    66% { transform: translateY(-4px) rotate(-1deg); }
   }
 
   @keyframes gradientShift {
-    0% { background-position: 0% 50%; }
+    0%, 100% { background-position: 0% 50%; }
     50% { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
   }
 
   @keyframes shimmer {
-    from { background-position: -200% 0; }
-    to { background-position: 200% 0; }
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
   }
 
   @keyframes orbit {
-    from { transform: rotate(0deg) translateX(50px) rotate(0deg); }
-    to { transform: rotate(360deg) translateX(50px) rotate(-360deg); }
+    from { transform: rotate(0deg) translateX(60px) rotate(0deg); }
+    to { transform: rotate(360deg) translateX(60px) rotate(-360deg); }
+  }
+
+  @keyframes aurora {
+    0% { 
+      transform: scale(1) translate(0%, 0%);
+      opacity: 0.5;
+    }
+    50% {
+      transform: scale(1.2) translate(10%, -5%);
+      opacity: 0.7;
+    }
+    100% { 
+      transform: scale(1) translate(-5%, 5%);
+      opacity: 0.5;
+    }
   }
 
   @keyframes glow-border {
-    0%, 100% { border-color: hsl(270 91% 65% / 0.3); }
-    50% { border-color: hsl(170 80% 50% / 0.5); }
+    0%, 100% { border-color: hsl(258 89% 66% / 0.3); }
+    50% { border-color: hsl(168 84% 52% / 0.5); }
+  }
+
+  @keyframes noise-shift {
+    0% { transform: translate(0, 0); }
+    10% { transform: translate(-5%, -5%); }
+    20% { transform: translate(-10%, 5%); }
+    30% { transform: translate(5%, -10%); }
+    40% { transform: translate(-5%, 15%); }
+    50% { transform: translate(-10%, 5%); }
+    60% { transform: translate(15%, 0); }
+    70% { transform: translate(0, 10%); }
+    80% { transform: translate(-15%, 0); }
+    90% { transform: translate(10%, 5%); }
+    100% { transform: translate(5%, 0); }
   }
 
   .glass {
     background: linear-gradient(135deg, 
-      hsl(230 25% 8% / 0.8) 0%, 
-      hsl(230 25% 5% / 0.9) 100%
+      hsl(222 47% 7% / 0.85) 0%, 
+      hsl(222 47% 5% / 0.92) 100%
     );
-    backdrop-filter: blur(20px);
-    border: 1px solid hsl(270 91% 65% / 0.1);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border: 1px solid hsl(258 89% 66% / 0.08);
+    box-shadow: 
+      0 0 0 1px hsl(258 89% 66% / 0.02) inset,
+      0 1px 0 0 hsl(255 100% 100% / 0.03) inset,
+      0 8px 40px -12px hsl(222 47% 0% / 0.6);
+  }
+
+  .glass-hover {
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   .glass-hover:hover {
     background: linear-gradient(135deg, 
-      hsl(230 25% 10% / 0.9) 0%, 
-      hsl(230 25% 7% / 0.95) 100%
+      hsl(222 47% 9% / 0.9) 0%, 
+      hsl(222 47% 7% / 0.95) 100%
     );
-    border-color: hsl(270 91% 65% / 0.3);
+    border-color: hsl(258 89% 66% / 0.2);
+    box-shadow: 
+      0 0 0 1px hsl(258 89% 66% / 0.05) inset,
+      0 1px 0 0 hsl(255 100% 100% / 0.05) inset,
+      0 20px 60px -15px hsl(258 89% 45% / 0.25);
+    transform: translateY(-2px);
+  }
+
+  .glass-elevated {
+    background: linear-gradient(135deg, 
+      hsl(222 47% 9% / 0.9) 0%, 
+      hsl(222 47% 6% / 0.95) 100%
+    );
+    backdrop-filter: blur(32px) saturate(200%);
+    border: 1px solid hsl(258 89% 66% / 0.12);
+    box-shadow: 
+      0 0 0 1px hsl(258 89% 66% / 0.04) inset,
+      0 2px 0 0 hsl(255 100% 100% / 0.04) inset,
+      0 24px 80px -20px hsl(258 89% 40% / 0.35),
+      0 0 80px -40px hsl(168 84% 52% / 0.2);
   }
 
   .gradient-text {
     background: linear-gradient(135deg, 
-      hsl(270 91% 65%) 0%, 
-      hsl(170 80% 50%) 50%,
-      hsl(320 80% 60%) 100%
+      hsl(258 89% 75%) 0%, 
+      hsl(168 84% 60%) 40%,
+      hsl(328 85% 65%) 80%,
+      hsl(258 89% 75%) 100%
     );
     background-clip: text;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
+    background-size: 200% auto;
   }
 
   .gradient-text-animated {
     background: linear-gradient(135deg, 
-      hsl(270 91% 65%) 0%, 
-      hsl(170 80% 50%) 25%,
-      hsl(320 80% 60%) 50%,
-      hsl(270 91% 65%) 75%,
-      hsl(170 80% 50%) 100%
+      hsl(258 89% 75%) 0%, 
+      hsl(168 84% 60%) 25%,
+      hsl(328 85% 65%) 50%,
+      hsl(258 89% 75%) 75%,
+      hsl(168 84% 60%) 100%
     );
-    background-size: 200% auto;
+    background-size: 300% auto;
     background-clip: text;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
-    animation: gradientShift 4s ease infinite;
+    animation: gradientShift 6s ease infinite;
   }
 
   .gradient-border {
     position: relative;
-    background: hsl(var(--chronos-900));
+    background: hsl(var(--surface-2));
     border-radius: var(--radius);
   }
 
@@ -233,131 +318,146 @@
     position: absolute;
     inset: -1px;
     background: linear-gradient(135deg, 
-      hsl(270 91% 65% / 0.5) 0%,
-      hsl(170 80% 50% / 0.3) 50%,
-      hsl(270 91% 65% / 0.5) 100%
+      hsl(258 89% 66% / 0.5) 0%,
+      hsl(168 84% 52% / 0.3) 50%,
+      hsl(328 85% 60% / 0.4) 100%
     );
     border-radius: inherit;
     z-index: -1;
     mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
     mask-composite: exclude;
     padding: 1px;
+    animation: glow-border 4s ease infinite;
   }
 
   .glow-sm {
     box-shadow: 
-      0 0 10px hsl(270 91% 65% / 0.15),
-      0 0 20px hsl(270 91% 65% / 0.1);
+      0 0 16px hsl(258 89% 66% / 0.15),
+      0 0 32px hsl(258 89% 66% / 0.08);
   }
 
   .glow-md {
     box-shadow: 
-      0 0 20px hsl(270 91% 65% / 0.2),
-      0 0 40px hsl(270 91% 65% / 0.1),
-      0 0 60px hsl(170 80% 50% / 0.05);
+      0 0 24px hsl(258 89% 66% / 0.2),
+      0 0 48px hsl(258 89% 66% / 0.12),
+      0 0 72px hsl(168 84% 52% / 0.06);
   }
 
   .glow-lg {
     box-shadow: 
-      0 0 30px hsl(270 91% 65% / 0.3),
-      0 0 60px hsl(270 91% 65% / 0.2),
-      0 0 90px hsl(170 80% 50% / 0.1);
+      0 0 40px hsl(258 89% 66% / 0.3),
+      0 0 80px hsl(258 89% 66% / 0.2),
+      0 0 120px hsl(168 84% 52% / 0.12);
   }
 
   .glow-accent {
     box-shadow: 
-      0 0 20px hsl(170 80% 50% / 0.3),
-      0 0 40px hsl(170 80% 50% / 0.15);
+      0 0 24px hsl(168 84% 52% / 0.35),
+      0 0 48px hsl(168 84% 52% / 0.18);
   }
 
   .card-hover {
-    transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   .card-hover:hover {
-    transform: translateY(-4px);
+    transform: translateY(-6px) scale(1.01);
     box-shadow: 
-      0 20px 40px hsl(270 91% 65% / 0.15),
-      0 0 60px hsl(270 91% 65% / 0.1);
-    border-color: hsl(270 91% 65% / 0.4);
+      0 32px 64px hsl(258 89% 50% / 0.18),
+      0 0 80px hsl(258 89% 66% / 0.12);
+    border-color: hsl(258 89% 66% / 0.4);
   }
 
   .status-online {
     @apply w-2.5 h-2.5 rounded-full;
-    background: linear-gradient(135deg, hsl(150 80% 45%), hsl(170 80% 50%));
-    box-shadow: 0 0 10px hsl(150 80% 45% / 0.5);
-    animation: statusPulse 2s infinite;
+    background: linear-gradient(135deg, hsl(152 76% 48%), hsl(168 84% 52%));
+    box-shadow: 
+      0 0 8px hsl(152 76% 48% / 0.6),
+      0 0 16px hsl(152 76% 48% / 0.3);
+    animation: statusPulse 2.5s infinite;
   }
 
   @keyframes statusPulse {
     0%, 100% { 
       opacity: 1; 
-      box-shadow: 0 0 10px hsl(150 80% 45% / 0.5);
+      box-shadow: 0 0 8px hsl(152 76% 48% / 0.6), 0 0 16px hsl(152 76% 48% / 0.3);
     }
     50% { 
-      opacity: 0.7; 
-      box-shadow: 0 0 20px hsl(150 80% 45% / 0.8);
+      opacity: 0.8; 
+      box-shadow: 0 0 16px hsl(152 76% 48% / 0.8), 0 0 32px hsl(152 76% 48% / 0.5);
     }
   }
 
   .input-focus {
     @apply transition-all duration-300;
-    border: 1px solid hsl(var(--chronos-800));
+    border: 1px solid hsl(var(--surface-3));
   }
 
   .input-focus:focus {
     @apply outline-none;
-    border-color: hsl(270 91% 65% / 0.6);
+    border-color: hsl(258 89% 66% / 0.5);
     box-shadow: 
-      0 0 0 3px hsl(270 91% 65% / 0.1),
-      0 0 20px hsl(270 91% 65% / 0.1);
+      0 0 0 4px hsl(258 89% 66% / 0.1),
+      0 0 32px hsl(258 89% 66% / 0.1);
   }
 
   .btn-primary {
-    @apply px-5 py-2.5 rounded-xl font-semibold transition-all duration-300;
-    background: linear-gradient(135deg, hsl(270 91% 65%), hsl(270 80% 55%));
+    @apply px-6 py-3 rounded-xl font-semibold transition-all duration-300;
+    background: linear-gradient(135deg, hsl(258 89% 66%), hsl(258 80% 55%));
     color: white;
+    box-shadow: 
+      0 4px 24px hsl(258 89% 50% / 0.3),
+      inset 0 1px 0 hsl(258 95% 80% / 0.2);
   }
 
   .btn-primary:hover {
-    transform: translateY(-2px);
+    transform: translateY(-2px) scale(1.02);
     box-shadow: 
-      0 10px 30px hsl(270 91% 65% / 0.4),
-      0 0 40px hsl(270 91% 65% / 0.2);
+      0 12px 40px hsl(258 89% 50% / 0.4),
+      0 0 60px hsl(258 89% 66% / 0.25),
+      inset 0 1px 0 hsl(258 95% 80% / 0.3);
+  }
+
+  .btn-primary:active {
+    transform: translateY(0) scale(0.98);
   }
 
   .btn-secondary {
-    @apply px-5 py-2.5 rounded-xl font-medium transition-all duration-300;
-    background: hsl(var(--chronos-800));
+    @apply px-6 py-3 rounded-xl font-medium transition-all duration-300;
+    background: hsl(var(--surface-3));
     color: hsl(var(--foreground));
+    border: 1px solid hsl(var(--surface-4));
   }
 
   .btn-secondary:hover {
-    background: hsl(var(--chronos-700));
-    box-shadow: 0 5px 20px hsl(0 0% 0% / 0.3);
+    background: hsl(var(--surface-4));
+    border-color: hsl(258 89% 66% / 0.2);
+    box-shadow: 0 8px 32px hsl(0 0% 0% / 0.3);
   }
 
   .btn-ghost {
-    @apply px-5 py-2.5 rounded-xl font-medium transition-all duration-300;
+    @apply px-6 py-3 rounded-xl font-medium transition-all duration-300;
     background: transparent;
     color: hsl(var(--muted-foreground));
   }
 
   .btn-ghost:hover {
-    background: hsl(var(--chronos-800));
+    background: hsl(var(--surface-3));
     color: white;
   }
 
   .btn-accent {
-    @apply px-5 py-2.5 rounded-xl font-medium transition-all duration-300;
-    background: hsl(170 80% 50% / 0.15);
-    color: hsl(170 80% 50%);
-    border: 1px solid hsl(170 80% 50% / 0.3);
+    @apply px-6 py-3 rounded-xl font-medium transition-all duration-300;
+    background: hsl(168 84% 52% / 0.12);
+    color: hsl(168 84% 60%);
+    border: 1px solid hsl(168 84% 52% / 0.25);
   }
 
   .btn-accent:hover {
-    background: hsl(170 80% 50% / 0.25);
-    box-shadow: 0 0 30px hsl(170 80% 50% / 0.2);
+    background: hsl(168 84% 52% / 0.2);
+    box-shadow: 
+      0 0 40px hsl(168 84% 52% / 0.2),
+      inset 0 1px 0 hsl(168 90% 70% / 0.1);
   }
 
   .data-table {
@@ -365,17 +465,19 @@
   }
 
   .data-table thead {
-    @apply bg-[hsl(var(--chronos-950))];
+    @apply bg-[hsl(var(--surface-1))];
   }
 
   .data-table th {
-    @apply px-5 py-4 text-left text-xs font-semibold uppercase tracking-wider;
+    @apply px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider;
     color: hsl(var(--muted-foreground));
+    font-family: 'Satoshi', sans-serif;
+    letter-spacing: 0.08em;
   }
 
   .data-table td {
-    @apply px-5 py-4;
-    border-bottom: 1px solid hsl(var(--chronos-800));
+    @apply px-6 py-4;
+    border-bottom: 1px solid hsl(var(--surface-3));
   }
 
   .data-table tbody tr {
@@ -383,16 +485,16 @@
   }
 
   .data-table tbody tr:hover {
-    background: hsl(270 91% 65% / 0.05);
+    background: hsl(258 89% 66% / 0.04);
   }
 
   .metric-card {
-    @apply p-6 rounded-2xl transition-all duration-400;
-    background: linear-gradient(135deg, 
-      hsl(230 25% 8% / 0.9) 0%, 
-      hsl(230 25% 6% / 0.95) 100%
+    @apply p-7 rounded-2xl transition-all;
+    background: linear-gradient(145deg, 
+      hsl(222 47% 7% / 0.95) 0%, 
+      hsl(222 47% 5% / 0.98) 100%
     );
-    border: 1px solid hsl(var(--chronos-800));
+    border: 1px solid hsl(var(--surface-3));
     position: relative;
     overflow: hidden;
   }
@@ -406,85 +508,119 @@
     height: 1px;
     background: linear-gradient(90deg, 
       transparent 0%,
-      hsl(270 91% 65% / 0.5) 50%,
+      hsl(258 89% 66% / 0.6) 30%,
+      hsl(168 84% 52% / 0.4) 70%,
       transparent 100%
     );
   }
 
+  .metric-card::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 120px;
+    height: 120px;
+    background: radial-gradient(circle at top right, 
+      hsl(258 89% 66% / 0.08) 0%, 
+      transparent 70%
+    );
+    pointer-events: none;
+  }
+
   .metric-card:hover {
-    border-color: hsl(270 91% 65% / 0.3);
+    border-color: hsl(258 89% 66% / 0.3);
     box-shadow: 
-      0 20px 40px hsl(270 91% 65% / 0.1),
-      inset 0 1px 0 hsl(270 91% 65% / 0.2);
+      0 24px 64px hsl(258 89% 50% / 0.12),
+      inset 0 1px 0 hsl(258 89% 75% / 0.1);
   }
 
   .metric-value {
-    @apply text-3xl font-bold tracking-tight;
-    font-family: 'JetBrains Mono', monospace;
+    @apply text-4xl font-bold tracking-tight;
+    font-family: 'Clash Display', sans-serif;
+    letter-spacing: -0.04em;
   }
 
   .metric-label {
     @apply text-sm font-medium;
     color: hsl(var(--muted-foreground));
+    font-family: 'Satoshi', sans-serif;
+    letter-spacing: 0.01em;
   }
 
   .tag {
-    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold;
+    @apply inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-semibold;
+    font-family: 'Satoshi', sans-serif;
   }
 
   .tag-blue {
-    background: linear-gradient(135deg, hsl(220 80% 50% / 0.2), hsl(220 80% 50% / 0.1));
-    color: hsl(220 80% 60%);
-    border: 1px solid hsl(220 80% 50% / 0.3);
+    background: linear-gradient(135deg, hsl(220 80% 55% / 0.15), hsl(220 80% 55% / 0.08));
+    color: hsl(220 90% 70%);
+    border: 1px solid hsl(220 80% 55% / 0.25);
   }
 
   .tag-green {
-    background: linear-gradient(135deg, hsl(150 80% 45% / 0.2), hsl(150 80% 45% / 0.1));
-    color: hsl(150 80% 50%);
-    border: 1px solid hsl(150 80% 45% / 0.3);
+    background: linear-gradient(135deg, hsl(152 76% 48% / 0.15), hsl(152 76% 48% / 0.08));
+    color: hsl(152 80% 60%);
+    border: 1px solid hsl(152 76% 48% / 0.25);
   }
 
   .tag-purple {
-    background: linear-gradient(135deg, hsl(270 91% 65% / 0.2), hsl(270 91% 65% / 0.1));
-    color: hsl(270 91% 75%);
-    border: 1px solid hsl(270 91% 65% / 0.3);
+    background: linear-gradient(135deg, hsl(258 89% 66% / 0.15), hsl(258 89% 66% / 0.08));
+    color: hsl(258 95% 80%);
+    border: 1px solid hsl(258 89% 66% / 0.25);
   }
 
   .tag-yellow {
-    background: linear-gradient(135deg, hsl(40 95% 55% / 0.2), hsl(40 95% 55% / 0.1));
-    color: hsl(40 95% 60%);
-    border: 1px solid hsl(40 95% 55% / 0.3);
+    background: linear-gradient(135deg, hsl(38 92% 55% / 0.15), hsl(38 92% 55% / 0.08));
+    color: hsl(38 95% 65%);
+    border: 1px solid hsl(38 92% 55% / 0.25);
   }
 
   .tag-red {
-    background: linear-gradient(135deg, hsl(0 80% 55% / 0.2), hsl(0 80% 55% / 0.1));
-    color: hsl(0 80% 65%);
-    border: 1px solid hsl(0 80% 55% / 0.3);
+    background: linear-gradient(135deg, hsl(0 84% 60% / 0.15), hsl(0 84% 60% / 0.08));
+    color: hsl(0 90% 72%);
+    border: 1px solid hsl(0 84% 60% / 0.25);
   }
 
   .tag-cyan {
-    background: linear-gradient(135deg, hsl(170 80% 50% / 0.2), hsl(170 80% 50% / 0.1));
-    color: hsl(170 80% 55%);
-    border: 1px solid hsl(170 80% 50% / 0.3);
+    background: linear-gradient(135deg, hsl(168 84% 52% / 0.15), hsl(168 84% 52% / 0.08));
+    color: hsl(168 90% 65%);
+    border: 1px solid hsl(168 84% 52% / 0.25);
+  }
+
+  .noise-overlay {
+    position: fixed;
+    top: -50%;
+    left: -50%;
+    right: -50%;
+    bottom: -50%;
+    width: 200%;
+    height: 200%;
+    pointer-events: none;
+    opacity: 0.015;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+    animation: noise-shift 8s steps(10) infinite;
+    z-index: 9999;
   }
 }
 
-.bg-chronos-950 { background-color: hsl(230 25% 5%); }
-.bg-chronos-900 { background-color: hsl(230 25% 8%); }
-.bg-chronos-800 { background-color: hsl(230 20% 12%); }
-.bg-chronos-700 { background-color: hsl(230 15% 22%); }
-.bg-chronos-600 { background-color: hsl(230 12% 35%); }
-.bg-chronos-500 { background-color: hsl(270 91% 65%); }
-.bg-chronos-400 { background-color: hsl(270 95% 75%); }
-.bg-chronos-accent { background-color: hsl(170 80% 50%); }
+.bg-chronos-950 { background-color: hsl(222 47% 4%); }
+.bg-chronos-900 { background-color: hsl(222 47% 6%); }
+.bg-chronos-800 { background-color: hsl(222 30% 10%); }
+.bg-chronos-700 { background-color: hsl(222 25% 14%); }
+.bg-chronos-600 { background-color: hsl(222 20% 22%); }
+.bg-chronos-500 { background-color: hsl(258 89% 66%); }
+.bg-chronos-400 { background-color: hsl(258 95% 78%); }
+.bg-chronos-accent { background-color: hsl(168 84% 52%); }
 
-.text-chronos-500 { color: hsl(270 91% 65%); }
-.text-chronos-400 { color: hsl(270 95% 75%); }
-.text-chronos-accent { color: hsl(170 80% 50%); }
+.text-chronos-500 { color: hsl(258 89% 66%); }
+.text-chronos-400 { color: hsl(258 95% 78%); }
+.text-chronos-accent { color: hsl(168 84% 52%); }
 
-.border-chronos-950 { border-color: hsl(230 25% 5%); }
-.border-chronos-900 { border-color: hsl(230 25% 8%); }
-.border-chronos-800 { border-color: hsl(230 20% 12%); }
-.border-chronos-700 { border-color: hsl(230 15% 22%); }
-.border-chronos-600 { border-color: hsl(230 12% 35%); }
-.border-chronos-500 { border-color: hsl(270 91% 65%); }
+.border-chronos-950 { border-color: hsl(222 47% 4%); }
+.border-chronos-900 { border-color: hsl(222 47% 6%); }
+.border-chronos-800 { border-color: hsl(222 30% 10%); }
+.border-chronos-700 { border-color: hsl(222 25% 14%); }
+.border-chronos-600 { border-color: hsl(222 20% 22%); }
+.border-chronos-500 { border-color: hsl(258 89% 66%); }
