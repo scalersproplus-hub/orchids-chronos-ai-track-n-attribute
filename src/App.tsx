@@ -244,8 +244,11 @@ const AppContent: React.FC = () => {
       case 'setup': return <SetupGuide />;
       case 'settings': return <Settings />;
       case 'predictions': return <PredictiveInsights />;
-      case 'fraud': return <FraudDetection />;
+      case 'fraud': return <FraudRiskDashboard />;
       case 'budget': return <BudgetOptimizer />;
+      case 'forecast': return <ConversionForecast />;
+      case 'replay': return <SessionReplayViewer />;
+      case 'rules': return <RulesAutomation />;
       default: return <Dashboard campaigns={MOCK_CAMPAIGNS} />;
     }
   };
