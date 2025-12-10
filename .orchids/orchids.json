@@ -1,6 +1,10 @@
 {
   "projectId": "201422d4-6a3e-4dbd-a3fd-c2e57c4d04eb",
+<<<<<<< Updated upstream
   "createdAt": 1765347872627,
+=======
+  "createdAt": 1765347871132,
+>>>>>>> Stashed changes
   "version": "1.0",
   "startupCommands": [
     "bun install; bun run dev"
