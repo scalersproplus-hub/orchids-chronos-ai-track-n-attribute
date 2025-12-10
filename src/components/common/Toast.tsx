@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { ToastNotification } from '../../types';
-import { CheckCircle, XCircle, Info, X, Undo2, Loader2 } from 'lucide-react';
+import { CheckCircle, XCircle, Info, X, Undo2, Loader2, Sparkles } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 
 interface ToastProps {
@@ -8,17 +9,33 @@ interface ToastProps {
 }
 
 const ICONS = {
-    success: <CheckCircle className="w-5 h-5 text-green-400" />,
-    error: <XCircle className="w-5 h-5 text-red-400" />,
-    info: <Info className="w-5 h-5 text-blue-400" />,
-    loading: <Loader2 className="w-5 h-5 text-chronos-400 animate-spin" />,
+    success: <CheckCircle className="w-5 h-5 text-[hsl(150_80%_50%)]" />,
+    error: <XCircle className="w-5 h-5 text-[hsl(0_80%_60%)]" />,
+    info: <Info className="w-5 h-5 text-[hsl(270_91%_75%)]" />,
+    loading: <Loader2 className="w-5 h-5 text-[hsl(170_80%_50%)] animate-spin" />,
 };
 
-const COLORS = {
-    success: 'border-green-500/30',
-    error: 'border-red-500/30',
-    info: 'border-blue-500/30',
-    loading: 'border-chronos-500/30',
+const STYLES = {
+    success: {
+        border: 'hsl(150 80% 45% / 0.3)',
+        glow: 'hsl(150 80% 45% / 0.2)',
+        progress: 'hsl(150 80% 50%)',
+    },
+    error: {
+        border: 'hsl(0 80% 55% / 0.3)',
+        glow: 'hsl(0 80% 55% / 0.2)',
+        progress: 'hsl(0 80% 55%)',
+    },
+    info: {
+        border: 'hsl(270 91% 65% / 0.3)',
+        glow: 'hsl(270 91% 65% / 0.2)',
+        progress: 'hsl(270 91% 65%)',
+    },
+    loading: {
+        border: 'hsl(170 80% 50% / 0.3)',
+        glow: 'hsl(170 80% 50% / 0.2)',
+        progress: 'hsl(170 80% 50%)',
+    },
 };
 
 const ToastItem: React.FC<{ toast: ToastNotification & { onUndo?: () => void; duration?: number } }> = ({ toast }) => {
@@ -28,6 +45,7 @@ const ToastItem: React.FC<{ toast: ToastNotification & { onUndo?: () => void; du
     
     const duration = toast.duration || 5000;
     const showProgress = toast.type !== 'loading';
+    const style = STYLES[toast.type] || STYLES.info;
 
     useEffect(() => {
         if (isPaused || !showProgress) return;
@@ -58,62 +76,99 @@ const ToastItem: React.FC<{ toast: ToastNotification & { onUndo?: () => void; du
     };
 
     return (
-        <div 
-            className={`w-80 bg-chronos-900 border ${COLORS[toast.type] || COLORS.info} rounded-lg shadow-2xl overflow-hidden animate-in slide-in-from-right-full duration-300`}
+        <motion.div 
+            className="w-80 glass overflow-hidden"
+            style={{ 
+                borderRadius: '1rem',
+                border: `1px solid ${style.border}`,
+                boxShadow: `0 10px 40px ${style.glow}`,
+            }}
             onMouseEnter={() => setIsPaused(true)}
             onMouseLeave={() => setIsPaused(false)}
+            initial={{ x: 100, opacity: 0, scale: 0.9 }}
+            animate={{ x: 0, opacity: 1, scale: 1 }}
+            exit={{ x: 100, opacity: 0, scale: 0.9 }}
+            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+            whileHover={{ scale: 1.02 }}
+            layout
         >
             <div className="p-4 flex items-start gap-3">
-                <div className="flex-shrink-0">{ICONS[toast.type] || ICONS.info}</div>
+                <motion.div 
+                    className="flex-shrink-0 p-1"
+                    initial={{ scale: 0, rotate: -180 }}
+                    animate={{ scale: 1, rotate: 0 }}
+                    transition={{ type: "spring", delay: 0.1 }}
+                >
+                    {ICONS[toast.type] || ICONS.info}
+                </motion.div>
                 <div className="flex-1 min-w-0">
                     {toast.title && (
-                        <p className="text-sm font-medium text-white mb-0.5">{toast.title}</p>
+                        <motion.p 
+                            className="text-sm font-semibold text-white mb-0.5"
+                            initial={{ opacity: 0, y: -5 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.1 }}
+                        >
+                            {toast.title}
+                        </motion.p>
                     )}
-                    <p className="text-sm text-gray-300">{toast.message}</p>
+                    <motion.p 
+                        className="text-sm text-gray-300"
+                        initial={{ opacity: 0, y: -5 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.15 }}
+                    >
+                        {toast.message}
+                    </motion.p>
                 </div>
                 <div className="flex items-center gap-1 flex-shrink-0">
                     {(toast as any).onUndo && (
-                        <button 
+                        <motion.button 
                             onClick={handleUndo}
-                            className="p-1 text-chronos-400 hover:text-white hover:bg-chronos-800 rounded transition-colors"
+                            className="p-1.5 text-[hsl(170_80%_50%)] hover:text-white hover:bg-[hsl(170_80%_50%_/_0.1)] rounded-lg transition-colors"
                             title="Undo"
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
                         >
                             <Undo2 className="w-4 h-4" />
-                        </button>
+                        </motion.button>
                     )}
-                    <button 
+                    <motion.button 
                         onClick={() => dispatch({ type: 'REMOVE_TOAST', payload: toast.id })} 
-                        className="p-1 text-gray-500 hover:text-white hover:bg-chronos-800 rounded transition-colors"
+                        className="p-1.5 text-gray-500 hover:text-white hover:bg-[hsl(270_91%_65%_/_0.1)] rounded-lg transition-colors"
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
                     >
                         <X className="w-4 h-4" />
-                    </button>
+                    </motion.button>
                 </div>
             </div>
-            {/* Progress bar */}
+            
             {showProgress && (
-                <div className="h-0.5 bg-chronos-800">
-                    <div 
-                        className={`h-full transition-all duration-75 ${
-                            toast.type === 'success' ? 'bg-green-500' :
-                            toast.type === 'error' ? 'bg-red-500' :
-                            'bg-blue-500'
-                        }`}
-                        style={{ width: `${progress}%` }}
+                <div className="h-1 bg-[hsl(230_20%_12%)]">
+                    <motion.div 
+                        className="h-full"
+                        style={{ 
+                            background: `linear-gradient(90deg, ${style.progress}, ${style.progress}80)`,
+                            width: `${progress}%` 
+                        }}
+                        initial={{ width: '100%' }}
+                        transition={{ duration: 0.1 }}
                     />
                 </div>
             )}
-        </div>
+        </motion.div>
     );
 };
 
 export const Toast: React.FC<ToastProps> = ({ notifications }) => {
-    if (notifications.length === 0) return null;
-
     return (
         <div className="fixed bottom-5 right-5 z-[100] space-y-3">
-            {notifications.map(toast => (
-                <ToastItem key={toast.id} toast={toast} />
-            ))}
+            <AnimatePresence mode="popLayout">
+                {notifications.map(toast => (
+                    <ToastItem key={toast.id} toast={toast} />
+                ))}
+            </AnimatePresence>
         </div>
     );
 };

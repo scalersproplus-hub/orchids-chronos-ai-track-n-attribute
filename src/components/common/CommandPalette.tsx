@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useApp } from '../../contexts/AppContext';
-import { Search, Clock, ArrowRight, CornerDownLeft, ArrowUp, ArrowDown, X } from 'lucide-react';
+import { Search, Clock, ArrowRight, CornerDownLeft, ArrowUp, ArrowDown, X, Sparkles, Zap } from 'lucide-react';
 import { MOCK_JOURNEYS } from '../../services/mockData';
 import { NAV_ITEMS, AI_NAV_ITEMS, SETTINGS_NAV_ITEMS } from '../../constants';
 
@@ -24,7 +25,6 @@ export const CommandPalette: React.FC = () => {
     const inputRef = useRef<HTMLInputElement>(null);
     const resultsRef = useRef<HTMLDivElement>(null);
 
-    // Load recent searches
     useEffect(() => {
         const stored = localStorage.getItem(RECENT_SEARCHES_KEY);
         if (stored) {
@@ -36,7 +36,6 @@ export const CommandPalette: React.FC = () => {
         }
     }, []);
 
-    // Save recent search
     const saveRecentSearch = useCallback((search: string) => {
         if (!search.trim()) return;
         
@@ -53,7 +52,6 @@ export const CommandPalette: React.FC = () => {
         addToast({ type: 'info', message: 'Recent searches cleared' });
     };
 
-    // Close on escape
     useEffect(() => {
         const down = (e: KeyboardEvent) => {
             if (e.key === 'Escape') {
@@ -64,14 +62,12 @@ export const CommandPalette: React.FC = () => {
         return () => document.removeEventListener('keydown', down);
     }, [setCmdkOpen]);
 
-    // Build search results
     const allNavItems = [...NAV_ITEMS, ...AI_NAV_ITEMS, ...SETTINGS_NAV_ITEMS];
     
     const getResults = (): SearchResult[] => {
         const results: SearchResult[] = [];
         const q = query.toLowerCase();
 
-        // Navigation items
         const filteredNav = allNavItems.filter(item => 
             item.label.toLowerCase().includes(q)
         );
@@ -90,7 +86,6 @@ export const CommandPalette: React.FC = () => {
             });
         });
 
-        // Customers
         const filteredCustomers = MOCK_JOURNEYS.filter(j => 
             j.customerName.toLowerCase().includes(q) || 
             j.email.toLowerCase().includes(q)
@@ -110,7 +105,6 @@ export const CommandPalette: React.FC = () => {
             });
         });
 
-        // Quick actions
         if (query.length === 0 || 'ask ai'.includes(q) || 'chronos'.includes(q)) {
             results.push({
                 id: 'action-ai',
@@ -142,12 +136,10 @@ export const CommandPalette: React.FC = () => {
 
     const results = getResults();
 
-    // Reset selected index when query changes
     useEffect(() => {
         setSelectedIndex(0);
     }, [query]);
 
-    // Scroll selected item into view
     useEffect(() => {
         if (resultsRef.current) {
             const selectedItem = resultsRef.current.querySelector(`[data-index="${selectedIndex}"]`);
@@ -157,7 +149,6 @@ export const CommandPalette: React.FC = () => {
         }
     }, [selectedIndex]);
 
-    // Keyboard navigation
     const handleKeyDown = (e: React.KeyboardEvent) => {
         switch (e.key) {
             case 'ArrowDown':
@@ -183,15 +174,33 @@ export const CommandPalette: React.FC = () => {
     };
 
     return (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-start justify-center pt-20" onClick={() => setCmdkOpen(false)}>
-            <div 
-                className="w-full max-w-lg bg-chronos-900 border border-chronos-800 rounded-xl shadow-2xl animate-in fade-in zoom-in-95 duration-200 overflow-hidden" 
+        <motion.div 
+            className="fixed inset-0 z-50 flex items-start justify-center pt-20"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+        >
+            <motion.div 
+                className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                onClick={() => setCmdkOpen(false)}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+            />
+            <motion.div 
+                className="w-full max-w-lg glass shadow-2xl overflow-hidden relative"
+                style={{ 
+                    borderRadius: '1.25rem',
+                    border: '1px solid hsl(270 91% 65% / 0.2)' 
+                }}
                 onClick={e => e.stopPropagation()}
                 onKeyDown={handleKeyDown}
+                initial={{ scale: 0.95, y: -20, opacity: 0 }}
+                animate={{ scale: 1, y: 0, opacity: 1 }}
+                exit={{ scale: 0.95, y: -20, opacity: 0 }}
+                transition={{ type: "spring", damping: 25, stiffness: 300 }}
             >
-                {/* Search Input */}
-                <div className="relative border-b border-chronos-800">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500"/>
+                <div className="relative border-b border-[hsl(270_91%_65%_/_0.1)]">
+                    <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-[hsl(270_91%_75%)]"/>
                     <input 
                         ref={inputRef}
                         type="text"
@@ -199,89 +208,133 @@ export const CommandPalette: React.FC = () => {
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
                         placeholder="Search pages, customers, or actions..."
-                        className="w-full bg-transparent p-4 pl-12 pr-4 text-white placeholder:text-gray-500 focus:outline-none"
+                        className="w-full bg-transparent p-5 pl-14 pr-12 text-white placeholder:text-gray-500 focus:outline-none text-base"
                     />
-                    {query && (
-                        <button 
-                            onClick={() => setQuery('')}
-                            className="absolute right-4 top-1/2 -translate-y-1/2 p-1 text-gray-500 hover:text-white hover:bg-chronos-800 rounded transition-colors"
-                        >
-                            <X className="w-4 h-4" />
-                        </button>
-                    )}
+                    <AnimatePresence>
+                        {query && (
+                            <motion.button 
+                                onClick={() => setQuery('')}
+                                className="absolute right-5 top-1/2 -translate-y-1/2 p-1.5 text-gray-500 hover:text-white hover:bg-[hsl(270_91%_65%_/_0.1)] rounded-lg transition-colors"
+                                initial={{ scale: 0, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                exit={{ scale: 0, opacity: 0 }}
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.9 }}
+                            >
+                                <X className="w-4 h-4" />
+                            </motion.button>
+                        )}
+                    </AnimatePresence>
                 </div>
 
-                {/* Results */}
-                <div ref={resultsRef} className="max-h-80 overflow-y-auto p-2">
-                    {/* Recent Searches (when no query) */}
+                <div ref={resultsRef} className="max-h-80 overflow-y-auto p-3">
                     {query.length === 0 && recentSearches.length > 0 && (
-                        <div className="mb-2">
-                            <div className="flex items-center justify-between px-2 py-1">
-                                <span className="text-xs text-gray-500 font-semibold flex items-center gap-1">
-                                    <Clock className="w-3 h-3" /> Recent Searches
+                        <motion.div 
+                            className="mb-3"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                        >
+                            <div className="flex items-center justify-between px-3 py-2">
+                                <span className="text-xs text-gray-500 font-semibold flex items-center gap-2">
+                                    <Clock className="w-3 h-3 text-[hsl(270_91%_75%)]" /> Recent Searches
                                 </span>
-                                <button 
+                                <motion.button 
                                     onClick={clearRecentSearches}
-                                    className="text-xs text-gray-600 hover:text-gray-400 transition-colors"
+                                    className="text-xs text-gray-600 hover:text-[hsl(270_91%_75%)] transition-colors"
+                                    whileHover={{ scale: 1.05 }}
                                 >
                                     Clear
-                                </button>
+                                </motion.button>
                             </div>
                             {recentSearches.map((search, i) => (
-                                <button 
+                                <motion.button 
                                     key={i}
                                     onClick={() => handleRecentSearchClick(search)}
-                                    className="w-full flex items-center gap-3 p-2 rounded-lg text-gray-400 hover:bg-chronos-800 hover:text-white text-left"
+                                    className="w-full flex items-center gap-3 p-3 rounded-xl text-gray-400 hover:bg-[hsl(270_91%_65%_/_0.1)] hover:text-white text-left transition-colors"
+                                    initial={{ opacity: 0, x: -10 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    transition={{ delay: i * 0.05 }}
+                                    whileHover={{ x: 4 }}
                                 >
                                     <Clock className="w-4 h-4 text-gray-600" />
                                     <span className="text-sm">{search}</span>
-                                </button>
+                                </motion.button>
                             ))}
-                            <div className="border-t border-chronos-800 my-2" />
-                        </div>
+                            <div className="border-t border-[hsl(270_91%_65%_/_0.1)] my-3" />
+                        </motion.div>
                     )}
 
-                    {/* Search Results */}
                     {results.length > 0 ? (
                         <>
-                            {/* Group by type */}
                             {['navigation', 'customer', 'action'].map(type => {
                                 const typeResults = results.filter(r => r.type === type);
                                 if (typeResults.length === 0) return null;
                                 
                                 return (
-                                    <div key={type} className="mb-2">
-                                        <div className="px-2 py-1 text-xs text-gray-500 font-semibold capitalize">
+                                    <div key={type} className="mb-3">
+                                        <div className="px-3 py-2 text-xs text-gray-500 font-semibold flex items-center gap-2">
+                                            {type === 'navigation' ? (
+                                                <Zap className="w-3 h-3 text-[hsl(170_80%_50%)]" />
+                                            ) : type === 'action' ? (
+                                                <Sparkles className="w-3 h-3 text-[hsl(270_91%_75%)]" />
+                                            ) : null}
                                             {type === 'navigation' ? 'Pages' : type === 'customer' ? 'Customers' : 'Quick Actions'}
                                         </div>
-                                        {typeResults.map(result => {
+                                        {typeResults.map((result, i) => {
                                             const index = results.indexOf(result);
                                             return (
-                                                <button 
+                                                <motion.button 
                                                     key={result.id}
                                                     data-index={index}
                                                     onClick={result.action}
-                                                    className={`w-full flex items-center gap-3 p-2 rounded-lg transition-colors ${
+                                                    className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all ${
                                                         selectedIndex === index 
-                                                            ? 'bg-chronos-800 text-white' 
-                                                            : 'text-gray-300 hover:bg-chronos-800/50 hover:text-white'
+                                                            ? 'text-white' 
+                                                            : 'text-gray-300 hover:text-white'
                                                     }`}
+                                                    style={{
+                                                        background: selectedIndex === index 
+                                                            ? 'linear-gradient(135deg, hsl(270 91% 65% / 0.15), hsl(170 80% 50% / 0.1))'
+                                                            : 'transparent',
+                                                        border: selectedIndex === index 
+                                                            ? '1px solid hsl(270 91% 65% / 0.3)'
+                                                            : '1px solid transparent',
+                                                    }}
+                                                    initial={{ opacity: 0, y: 5 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    transition={{ delay: i * 0.03 }}
+                                                    whileHover={{ x: 4 }}
                                                 >
-                                                    {result.icon ? (
-                                                        <result.icon className="w-4 h-4 text-gray-500" />
-                                                    ) : (
-                                                        <ArrowRight className="w-4 h-4 text-gray-500" />
-                                                    )}
+                                                    <motion.div 
+                                                        className={`p-2 rounded-lg ${
+                                                            selectedIndex === index 
+                                                                ? 'bg-gradient-to-br from-[hsl(270_91%_65%)] to-[hsl(170_80%_50%)]' 
+                                                                : 'bg-[hsl(230_20%_15%)]'
+                                                        }`}
+                                                        whileHover={{ rotate: [0, -5, 5, 0] }}
+                                                        transition={{ duration: 0.3 }}
+                                                    >
+                                                        {result.icon ? (
+                                                            <result.icon className={`w-4 h-4 ${selectedIndex === index ? 'text-white' : 'text-gray-500'}`} />
+                                                        ) : (
+                                                            <ArrowRight className={`w-4 h-4 ${selectedIndex === index ? 'text-white' : 'text-gray-500'}`} />
+                                                        )}
+                                                    </motion.div>
                                                     <div className="flex-1 text-left">
-                                                        <div className="text-sm">{result.title}</div>
+                                                        <div className="text-sm font-medium">{result.title}</div>
                                                         {result.subtitle && (
                                                             <div className="text-xs text-gray-500">{result.subtitle}</div>
                                                         )}
                                                     </div>
                                                     {selectedIndex === index && (
-                                                        <CornerDownLeft className="w-4 h-4 text-gray-500" />
+                                                        <motion.div
+                                                            initial={{ opacity: 0, scale: 0.8 }}
+                                                            animate={{ opacity: 1, scale: 1 }}
+                                                        >
+                                                            <CornerDownLeft className="w-4 h-4 text-[hsl(270_91%_75%)]" />
+                                                        </motion.div>
                                                     )}
-                                                </button>
+                                                </motion.button>
                                             );
                                         })}
                                     </div>
@@ -289,37 +342,64 @@ export const CommandPalette: React.FC = () => {
                             })}
                         </>
                     ) : query.length > 0 ? (
-                        <div className="p-8 text-center text-gray-500">
+                        <motion.div 
+                            className="p-8 text-center text-gray-500"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                        >
                             <p className="text-sm">No results found for "{query}"</p>
-                            <p className="text-xs mt-1">Try searching for pages or customer names</p>
-                        </div>
+                            <p className="text-xs mt-1 text-gray-600">Try searching for pages or customer names</p>
+                        </motion.div>
                     ) : null}
                 </div>
 
-                {/* Footer with keyboard hints */}
-                <div className="border-t border-chronos-800 p-3 bg-chronos-950 flex items-center justify-between text-xs text-gray-500">
+                <div className="border-t border-[hsl(270_91%_65%_/_0.1)] p-4 bg-[hsl(230_25%_5%)] flex items-center justify-between text-xs text-gray-500 rounded-b-xl">
                     <div className="flex items-center gap-4">
-                        <span className="flex items-center gap-1">
-                            <kbd className="px-1.5 py-0.5 bg-chronos-800 rounded border border-chronos-700">
+                        <span className="flex items-center gap-1.5">
+                            <kbd className="px-2 py-1 rounded-lg font-mono"
+                                style={{
+                                    background: 'linear-gradient(135deg, hsl(230 20% 15%), hsl(230 20% 12%))',
+                                    border: '1px solid hsl(270 91% 65% / 0.2)',
+                                    color: 'hsl(270 91% 75%)',
+                                }}
+                            >
                                 <ArrowUp className="w-3 h-3 inline" />
                             </kbd>
-                            <kbd className="px-1.5 py-0.5 bg-chronos-800 rounded border border-chronos-700">
+                            <kbd className="px-2 py-1 rounded-lg font-mono"
+                                style={{
+                                    background: 'linear-gradient(135deg, hsl(230 20% 15%), hsl(230 20% 12%))',
+                                    border: '1px solid hsl(270 91% 65% / 0.2)',
+                                    color: 'hsl(270 91% 75%)',
+                                }}
+                            >
                                 <ArrowDown className="w-3 h-3 inline" />
                             </kbd>
-                            <span className="ml-1">Navigate</span>
+                            <span className="text-gray-500">Navigate</span>
                         </span>
-                        <span className="flex items-center gap-1">
-                            <kbd className="px-1.5 py-0.5 bg-chronos-800 rounded border border-chronos-700">↵</kbd>
-                            <span className="ml-1">Select</span>
+                        <span className="flex items-center gap-1.5">
+                            <kbd className="px-2 py-1 rounded-lg font-mono"
+                                style={{
+                                    background: 'linear-gradient(135deg, hsl(230 20% 15%), hsl(230 20% 12%))',
+                                    border: '1px solid hsl(270 91% 65% / 0.2)',
+                                    color: 'hsl(270 91% 75%)',
+                                }}
+                            >↵</kbd>
+                            <span className="text-gray-500">Select</span>
                         </span>
-                        <span className="flex items-center gap-1">
-                            <kbd className="px-1.5 py-0.5 bg-chronos-800 rounded border border-chronos-700">Esc</kbd>
-                            <span className="ml-1">Close</span>
+                        <span className="flex items-center gap-1.5">
+                            <kbd className="px-2 py-1 rounded-lg font-mono"
+                                style={{
+                                    background: 'linear-gradient(135deg, hsl(230 20% 15%), hsl(230 20% 12%))',
+                                    border: '1px solid hsl(270 91% 65% / 0.2)',
+                                    color: 'hsl(270 91% 75%)',
+                                }}
+                            >Esc</kbd>
+                            <span className="text-gray-500">Close</span>
                         </span>
                     </div>
-                    <span className="text-gray-600">{results.length} results</span>
+                    <span className="text-[hsl(170_80%_50%)]">{results.length} results</span>
                 </div>
-            </div>
-        </div>
+            </motion.div>
+        </motion.div>
     );
 };
