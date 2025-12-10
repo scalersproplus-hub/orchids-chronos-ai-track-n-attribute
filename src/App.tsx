@@ -4,7 +4,7 @@ import { Sidebar } from './components/Sidebar';
 import { Dashboard } from './components/Dashboard';
 import { JourneyMap } from './components/JourneyMap';
 import { Settings } from './components/Settings';
-import { MOCK_CAMPAIGNS, MOCK_JOURNEYS } from './services/mockData';
+import { getDataForMode } from './services/mockData';
 import { useApp } from './contexts/AppContext';
 import { AttributionModeler } from './components/AttributionModeler';
 import { IdentityGraph } from './components/IdentityGraph';
@@ -195,6 +195,8 @@ const AppContent: React.FC = () => {
   const [lastUpdated, setLastUpdated] = useState<Date | null>(new Date());
   const [isRefreshing, setIsRefreshing] = useState(false);
 
+  const data = getDataForMode(currentAccount);
+
   useKeyboardShortcuts();
 
   useEffect(() => {
@@ -235,11 +237,11 @@ const AppContent: React.FC = () => {
 
   const renderContent = () => {
     switch (currentView) {
-      case 'dashboard': return <Dashboard campaigns={MOCK_CAMPAIGNS} />;
-      case 'journey': return <JourneyMap journeys={MOCK_JOURNEYS} />;
-      case 'identity': return <IdentityGraph journeys={MOCK_JOURNEYS} />;
+      case 'dashboard': return <Dashboard campaigns={data.campaigns} isDemo={data.isDemo} />;
+      case 'journey': return <JourneyMap journeys={data.journeys} isDemo={data.isDemo} />;
+      case 'identity': return <IdentityGraph journeys={data.journeys} isDemo={data.isDemo} />;
       case 'offline': return <OfflineConversionsHub />;
-      case 'attribution': return <AttributionModeler campaigns={MOCK_CAMPAIGNS} journeys={MOCK_JOURNEYS} />;
+      case 'attribution': return <AttributionModeler campaigns={data.campaigns} journeys={data.journeys} isDemo={data.isDemo} />;
       case 'datasources': return <DataSources />;
       case 'setup': return <SetupGuide />;
       case 'settings': return <Settings />;
@@ -249,7 +251,7 @@ const AppContent: React.FC = () => {
       case 'forecast': return <ConversionForecast />;
       case 'replay': return <SessionReplayViewer />;
       case 'rules': return <RulesAutomation />;
-      default: return <Dashboard campaigns={MOCK_CAMPAIGNS} />;
+      default: return <Dashboard campaigns={data.campaigns} isDemo={data.isDemo} />;
     }
   };
 
