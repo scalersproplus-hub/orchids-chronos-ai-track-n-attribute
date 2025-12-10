@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Legend, Area, AreaChart } from 'recharts';
-import { TrendingUp, Target, DollarSign, BrainCircuit, AlertTriangle, Lightbulb, ChevronDown, CheckCircle, BarChart2, Download, FileSpreadsheet, FileJson, GitCompare, Sparkles, Zap, ArrowUpRight } from 'lucide-react';
+import { TrendingUp, Target, DollarSign, BrainCircuit, AlertTriangle, Lightbulb, ChevronDown, CheckCircle, BarChart2, Download, FileSpreadsheet, FileJson, GitCompare, Sparkles, Zap, ArrowUpRight, Rocket, PlayCircle } from 'lucide-react';
 import { Campaign, AnalysisStatus, AIInsight, TimeSeriesData, Anomaly, AdSet, SavedView } from '../types';
 import { analyzeCampaignPerformance, detectAnomalies, getBudgetSuggestions } from '../services/geminiService';
-import { MOCK_TIME_SERIES, MOCK_CAMPAIGNS } from '../services/mockData';
+import { DEMO_TIME_SERIES, DEMO_CAMPAIGNS, isDemoMode } from '../services/mockData';
 import { SkeletonLoader } from './common/SkeletonLoader';
 import { DateRangePicker } from './common/DateRangePicker';
 import { SavedViews } from './common/SavedViews';
@@ -17,6 +17,7 @@ import { useApp } from '../contexts/AppContext';
 
 interface DashboardProps {
   campaigns: Campaign[];
+  isDemo?: boolean;
 }
 
 type PlatformFilter = 'All' | 'Facebook' | 'Google' | 'TikTok';
@@ -154,7 +155,86 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   return null;
 };
 
-export const Dashboard: React.FC<DashboardProps> = ({ campaigns: initialCampaigns }) => {
+const EmptyDashboard: React.FC<{ onEnableDemo: () => void }> = ({ onEnableDemo }) => {
+  const { setCurrentView } = useApp();
+  
+  return (
+    <motion.div
+      className="flex flex-col items-center justify-center py-20 px-4"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+    >
+      <motion.div
+        className="w-24 h-24 rounded-3xl flex items-center justify-center mb-6"
+        style={{ 
+          background: 'linear-gradient(135deg, hsl(270 91% 65% / 0.2), hsl(320 80% 60% / 0.1))',
+          border: '1px solid hsl(270 91% 65% / 0.3)'
+        }}
+        animate={{ scale: [1, 1.05, 1] }}
+        transition={{ duration: 3, repeat: Infinity }}
+      >
+        <Rocket className="w-12 h-12 text-[hsl(270_91%_75%)]" />
+      </motion.div>
+      
+      <h2 className="text-2xl font-bold text-white mb-3 text-center heading">
+        Ready to Track Your Ads
+      </h2>
+      <p className="text-gray-400 text-center max-w-md mb-8">
+        Connect your ad platforms or try demo mode to see how Chronos AI reveals the true performance of your campaigns.
+      </p>
+      
+      <div className="flex flex-col sm:flex-row gap-4">
+        <motion.button
+          onClick={() => setCurrentView('setup')}
+          className="px-6 py-3 rounded-xl font-semibold flex items-center gap-2 text-white"
+          style={{
+            background: 'linear-gradient(135deg, hsl(270 91% 65%), hsl(320 80% 60%))',
+            boxShadow: '0 8px 32px hsl(270 91% 65% / 0.3)'
+          }}
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+        >
+          <Zap className="w-5 h-5" />
+          Start Setup
+        </motion.button>
+        
+        <motion.button
+          onClick={onEnableDemo}
+          className="px-6 py-3 rounded-xl font-semibold flex items-center gap-2 transition-all"
+          style={{
+            background: 'linear-gradient(135deg, hsl(170 80% 45% / 0.15), hsl(150 80% 50% / 0.1))',
+            border: '1px solid hsl(170 80% 50% / 0.3)',
+            color: 'hsl(170 80% 55%)'
+          }}
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+        >
+          <PlayCircle className="w-5 h-5" />
+          Try Demo Mode
+        </motion.button>
+      </div>
+      
+      <div className="mt-12 grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl">
+        <div className="glass p-4 rounded-xl text-center" style={{ border: '1px solid hsl(270 91% 65% / 0.1)' }}>
+          <div className="text-2xl font-bold text-[hsl(270_91%_75%)] mb-1">20-40%</div>
+          <div className="text-xs text-gray-500">More conversions tracked</div>
+        </div>
+        <div className="glass p-4 rounded-xl text-center" style={{ border: '1px solid hsl(170 80% 50% / 0.1)' }}>
+          <div className="text-2xl font-bold text-[hsl(170_80%_55%)] mb-1">iOS 14.5+</div>
+          <div className="text-xs text-gray-500">Tracking compatible</div>
+        </div>
+        <div className="glass p-4 rounded-xl text-center" style={{ border: '1px solid hsl(40 95% 55% / 0.1)' }}>
+          <div className="text-2xl font-bold text-[hsl(40_95%_60%)] mb-1">2 min</div>
+          <div className="text-xs text-gray-500">Setup time</div>
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
+export const Dashboard: React.FC<DashboardProps> = ({ campaigns: initialCampaigns, isDemo = false }) => {
+  const { state, updateAccount, addToast } = useApp();
+  const { currentAccount } = state;
   const [loading, setLoading] = useState(true);
   const [anomalies, setAnomalies] = useState<Anomaly[]>([]);
   const [budgetSuggestion, setBudgetSuggestion] = useState<string>('');
@@ -168,19 +248,39 @@ export const Dashboard: React.FC<DashboardProps> = ({ campaigns: initialCampaign
   const [isComparisonOpen, setIsComparisonOpen] = useState(false);
   const [campaigns, setCampaigns] = useState<Campaign[]>(initialCampaigns);
   const [campaignTags, setCampaignTags] = useState<Record<string, string[]>>({});
-  const { addToast } = useApp();
+
+  const timeSeriesData = isDemo ? DEMO_TIME_SERIES : [];
+
+  const handleEnableDemo = () => {
+    const demoAccount = {
+      ...currentAccount,
+      name: 'Demo Workspace',
+      websiteUrl: 'https://demo-store.com',
+    };
+    updateAccount(demoAccount);
+    addToast({ type: 'success', message: 'Demo mode enabled! Explore with sample data.' });
+  };
+
+  useEffect(() => {
+    setCampaigns(initialCampaigns);
+  }, [initialCampaigns]);
 
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
-      const detectedAnomalies = await detectAnomalies(MOCK_CAMPAIGNS);
-      const suggestion = await getBudgetSuggestions(MOCK_CAMPAIGNS);
-      setAnomalies(detectedAnomalies);
-      setBudgetSuggestion(suggestion);
+      if (campaigns.length > 0) {
+        const detectedAnomalies = await detectAnomalies(campaigns);
+        const suggestion = await getBudgetSuggestions(campaigns);
+        setAnomalies(detectedAnomalies);
+        setBudgetSuggestion(suggestion);
+      } else {
+        setAnomalies([]);
+        setBudgetSuggestion('Connect your ad platforms to receive AI-powered budget recommendations.');
+      }
       setLoading(false);
     };
     fetchData();
-  }, []);
+  }, [campaigns]);
 
   const filteredCampaigns = campaigns.filter(c => 
     (platformFilter === 'All' || c.platform === platformFilter) &&
@@ -227,6 +327,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ campaigns: initialCampaign
     setCampaignTags(prev => ({ ...prev, [campaignId]: newTags }));
     addToast({ type: 'success', message: 'Tags updated' });
   };
+
+  if (initialCampaigns.length === 0 && !isDemo) {
+    return (
+      <div className="space-y-8">
+        <WelcomeBanner />
+        <EmptyDashboard onEnableDemo={handleEnableDemo} />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -306,7 +415,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ campaigns: initialCampaign
             <span className="hidden sm:inline">Compare</span>
           </motion.button>
           <DateRangePicker value={dateRange} onChange={setDateRange} />
-          <ExportDropdown campaigns={filteredCampaigns} timeSeriesData={MOCK_TIME_SERIES} />
+          <ExportDropdown campaigns={filteredCampaigns} timeSeriesData={timeSeriesData} />
         </motion.div>
       </motion.div>
 
@@ -392,7 +501,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ campaigns: initialCampaign
           ) : (
             <div className="h-[300px] w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={MOCK_TIME_SERIES} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
+                <AreaChart data={timeSeriesData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
                   <defs>
                     <linearGradient id="spendGradient" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor="hsl(0 80% 55%)" stopOpacity={0.3} />
