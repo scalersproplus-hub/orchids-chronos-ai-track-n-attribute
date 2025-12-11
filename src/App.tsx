@@ -125,13 +125,13 @@ const Breadcrumbs: React.FC<{ currentView: string }> = ({ currentView }) => {
   
   return (
     <motion.nav 
-      className="hidden sm:flex items-center gap-2 text-sm text-gray-500 mb-1"
+      className="hidden sm:flex items-center gap-2 text-[13px] text-[hsl(225_12%_50%)] mb-1"
       initial={{ opacity: 0, x: -10 }}
       animate={{ opacity: 1, x: 0 }}
     >
-      <span className="hover:text-[hsl(270_91%_75%)] cursor-pointer transition-colors">{category}</span>
+      <span className="hover:text-[hsl(252_92%_78%)] cursor-pointer transition-colors">{category}</span>
       <ChevronRight className="w-3 h-3" />
-      <span className="text-[hsl(170_80%_50%)] font-medium">{currentPage?.label || 'Dashboard'}</span>
+      <span className="text-[hsl(165_82%_55%)] font-medium">{currentPage?.label || 'Dashboard'}</span>
     </motion.nav>
   );
 };
@@ -160,14 +160,14 @@ const LastUpdatedIndicator: React.FC<{ lastUpdated: Date | null; onRefresh: () =
   };
 
   return (
-    <div className="flex items-center gap-2 text-xs text-gray-500">
+    <div className="flex items-center gap-2 text-[12px] text-[hsl(225_12%_50%)]">
       {lastUpdated && (
         <span className="hidden sm:inline">Updated {getRelativeTime(lastUpdated)}</span>
       )}
       <motion.button
         onClick={onRefresh}
         disabled={isRefreshing}
-        className="p-2 glass glass-hover rounded-xl transition-colors disabled:opacity-50"
+        className="p-2.5 glass glass-hover rounded-xl transition-colors disabled:opacity-50"
         title="Refresh data"
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
