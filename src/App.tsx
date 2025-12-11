@@ -45,20 +45,21 @@ const KeyboardShortcutsHelp: React.FC<{ onClose: () => void }> = ({ onClose }) =
       animate={{ opacity: 1 }}
     />
     <motion.div 
-      className="glass relative max-w-md w-full shadow-2xl"
+      className="glass-elevated relative max-w-md w-full shadow-2xl"
       style={{ 
-        borderRadius: '1.5rem',
-        border: '1px solid hsl(270 91% 65% / 0.2)' 
+        borderRadius: '1.25rem',
+        border: '1px solid hsl(252 87% 64% / 0.15)' 
       }}
       initial={{ scale: 0.9, y: 20 }}
       animate={{ scale: 1, y: 0 }}
       exit={{ scale: 0.9, y: 20 }}
       transition={{ type: "spring", damping: 25, stiffness: 300 }}
     >
-      <div className="flex items-center justify-between p-5 border-b border-[hsl(270_91%_65%_/_0.1)]">
+      <div className="flex items-center justify-between p-5 border-b border-[hsl(225_15%_14%_/_0.6)]">
         <div className="flex items-center gap-3">
           <motion.div 
-            className="p-2 rounded-xl bg-gradient-to-br from-[hsl(270_91%_65%)] to-[hsl(320_80%_60%)]"
+            className="p-2 rounded-xl"
+            style={{ background: 'linear-gradient(135deg, hsl(252 87% 60%), hsl(330 80% 55%))' }}
             whileHover={{ rotate: 360 }}
             transition={{ duration: 0.6 }}
           >
@@ -68,11 +69,11 @@ const KeyboardShortcutsHelp: React.FC<{ onClose: () => void }> = ({ onClose }) =
         </div>
         <motion.button 
           onClick={onClose} 
-          className="p-2 hover:bg-[hsl(270_91%_65%_/_0.1)] rounded-xl transition-colors"
+          className="p-2 hover:bg-[hsl(252_87%_64%_/_0.08)] rounded-xl transition-colors"
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
         >
-          <X className="w-4 h-4 text-gray-400" />
+          <X className="w-4 h-4 text-[hsl(225_12%_50%)]" />
         </motion.button>
       </div>
       <div className="p-5 space-y-3">
@@ -84,18 +85,18 @@ const KeyboardShortcutsHelp: React.FC<{ onClose: () => void }> = ({ onClose }) =
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: i * 0.05 }}
             whileHover={{ x: 4 }}
-            style={{ border: '1px solid hsl(230 20% 15%)' }}
+            style={{ border: '1px solid hsl(225 15% 14%)' }}
           >
-            <span className="text-sm text-gray-300">{shortcut.description}</span>
+            <span className="text-sm text-[hsl(225_12%_60%)]">{shortcut.description}</span>
             <div className="flex items-center gap-1">
               {shortcut.keys.map((key, j) => (
                 <kbd 
                   key={j} 
                   className="px-2.5 py-1.5 text-xs rounded-lg font-mono font-medium"
                   style={{
-                    background: 'linear-gradient(135deg, hsl(230 20% 15%), hsl(230 20% 12%))',
-                    border: '1px solid hsl(270 91% 65% / 0.2)',
-                    color: 'hsl(270 91% 75%)',
+                    background: 'linear-gradient(145deg, hsl(225 15% 12%), hsl(225 15% 8%))',
+                    border: '1px solid hsl(252 87% 64% / 0.15)',
+                    color: 'hsl(252 92% 78%)',
                   }}
                 >
                   {key}
@@ -105,9 +106,9 @@ const KeyboardShortcutsHelp: React.FC<{ onClose: () => void }> = ({ onClose }) =
           </motion.div>
         ))}
       </div>
-      <div className="p-5 border-t border-[hsl(270_91%_65%_/_0.1)] bg-[hsl(230_25%_5%)] rounded-b-3xl">
-        <p className="text-xs text-gray-500 text-center">
-          Press <kbd className="px-2 py-1 mx-1 bg-[hsl(230_20%_12%)] rounded-lg text-[hsl(270_91%_75%)] font-mono">?</kbd> anytime to view shortcuts
+      <div className="p-5 border-t border-[hsl(225_15%_14%_/_0.6)] bg-[hsl(225_15%_6%)] rounded-b-[1.25rem]">
+        <p className="text-xs text-[hsl(225_12%_45%)] text-center">
+          Press <kbd className="px-2 py-1 mx-1 bg-[hsl(225_15%_10%)] rounded-lg text-[hsl(252_92%_78%)] font-mono border border-[hsl(252_87%_64%_/_0.15)]">?</kbd> anytime to view shortcuts
         </p>
       </div>
     </motion.div>
