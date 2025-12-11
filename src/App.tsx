@@ -378,7 +378,7 @@ const App: React.FC = () => {
 
   if (!currentAccount) {
     return (
-      <div className="flex items-center justify-center h-screen bg-[hsl(230_25%_5%)] text-gray-400">
+      <div className="flex items-center justify-center h-screen bg-[hsl(225_15%_5%)] text-[hsl(225_12%_55%)]">
         <AnimatedBackground />
         <motion.div 
           className="text-center relative z-10"
@@ -386,24 +386,24 @@ const App: React.FC = () => {
           animate={{ opacity: 1, scale: 1 }}
         >
           <motion.div 
-            className="w-16 h-16 mx-auto mb-6 rounded-2xl flex items-center justify-center"
+            className="w-16 h-16 mx-auto mb-6 rounded-xl flex items-center justify-center"
             style={{
-              background: 'linear-gradient(135deg, hsl(270 91% 65%), hsl(320 80% 60%))',
-              boxShadow: '0 0 40px hsl(270 91% 65% / 0.4)',
+              background: 'linear-gradient(135deg, hsl(252 87% 60%), hsl(330 80% 55%))',
+              boxShadow: '0 0 48px hsl(252 87% 50% / 0.35)',
             }}
             animate={{ rotate: 360 }}
-            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+            transition={{ duration: 2.5, repeat: Infinity, ease: "linear" }}
           >
             <BrainCircuit className="w-8 h-8 text-white" />
           </motion.div>
-          <p className="text-lg font-medium heading gradient-text">Loading workspace...</p>
+          <p className="text-lg font-semibold heading gradient-text">Loading workspace...</p>
         </motion.div>
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen text-gray-200 relative">
+    <div className="flex min-h-screen text-[hsl(225_12%_75%)] relative">
       <AnimatedBackground />
       <CursorGlow />
       <div className="relative z-10 flex w-full">
