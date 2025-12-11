@@ -1,68 +1,68 @@
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
 
 export const AnimatedBackground: React.FC = () => {
   return (
     <div className="fixed inset-0 overflow-hidden pointer-events-none">
-      <div className="absolute inset-0 bg-[hsl(222_47%_4%)]" />
+      <div className="absolute inset-0 bg-[hsl(225_15%_5%)]" />
       
       <motion.div 
-        className="absolute -top-1/2 -left-1/4 w-[800px] h-[800px] rounded-full opacity-[0.12]"
+        className="absolute -top-1/2 -left-1/4 w-[900px] h-[900px] rounded-full opacity-[0.08]"
         style={{ 
-          background: 'radial-gradient(circle, hsl(258 89% 55%) 0%, transparent 70%)',
-          filter: 'blur(80px)',
-        }}
-        animate={{ 
-          x: [0, 100, 50, 0],
-          y: [0, 50, 100, 0],
-          scale: [1, 1.1, 0.95, 1],
-        }}
-        transition={{ duration: 25, repeat: Infinity, ease: "easeInOut" }}
-      />
-      
-      <motion.div 
-        className="absolute top-1/4 -right-1/4 w-[700px] h-[700px] rounded-full opacity-[0.08]"
-        style={{ 
-          background: 'radial-gradient(circle, hsl(168 84% 45%) 0%, transparent 70%)',
+          background: 'radial-gradient(circle, hsl(252 87% 55%) 0%, transparent 65%)',
           filter: 'blur(100px)',
         }}
         animate={{ 
-          x: [0, -80, -40, 0],
-          y: [0, 80, -20, 0],
-          scale: [1, 0.9, 1.1, 1],
+          x: [0, 80, 40, 0],
+          y: [0, 40, 80, 0],
+          scale: [1, 1.08, 0.96, 1],
         }}
         transition={{ duration: 30, repeat: Infinity, ease: "easeInOut" }}
       />
       
       <motion.div 
-        className="absolute -bottom-1/4 left-1/3 w-[600px] h-[600px] rounded-full opacity-[0.06]"
+        className="absolute top-1/4 -right-1/4 w-[800px] h-[800px] rounded-full opacity-[0.05]"
         style={{ 
-          background: 'radial-gradient(circle, hsl(328 85% 55%) 0%, transparent 70%)',
-          filter: 'blur(90px)',
+          background: 'radial-gradient(circle, hsl(165 82% 45%) 0%, transparent 65%)',
+          filter: 'blur(120px)',
         }}
         animate={{ 
-          x: [0, 60, -30, 0],
-          y: [0, -60, 30, 0],
-          scale: [1, 1.15, 0.9, 1],
+          x: [0, -60, -30, 0],
+          y: [0, 60, -15, 0],
+          scale: [1, 0.92, 1.08, 1],
         }}
         transition={{ duration: 35, repeat: Infinity, ease: "easeInOut" }}
       />
+      
+      <motion.div 
+        className="absolute -bottom-1/4 left-1/3 w-[700px] h-[700px] rounded-full opacity-[0.04]"
+        style={{ 
+          background: 'radial-gradient(circle, hsl(330 80% 55%) 0%, transparent 65%)',
+          filter: 'blur(110px)',
+        }}
+        animate={{ 
+          x: [0, 50, -25, 0],
+          y: [0, -50, 25, 0],
+          scale: [1, 1.12, 0.92, 1],
+        }}
+        transition={{ duration: 40, repeat: Infinity, ease: "easeInOut" }}
+      />
 
       <div 
-        className="absolute inset-0 opacity-[0.35]"
+        className="absolute inset-0 opacity-[0.25]"
         style={{
           backgroundImage: `
-            radial-gradient(circle at 20% 30%, hsl(258 89% 66% / 0.03) 0%, transparent 50%),
-            radial-gradient(circle at 80% 70%, hsl(168 84% 52% / 0.02) 0%, transparent 50%),
-            radial-gradient(circle at 50% 50%, hsl(328 85% 60% / 0.02) 0%, transparent 60%)
+            radial-gradient(circle at 15% 25%, hsl(252 87% 64% / 0.02) 0%, transparent 45%),
+            radial-gradient(circle at 85% 75%, hsl(165 82% 51% / 0.015) 0%, transparent 45%),
+            radial-gradient(circle at 50% 50%, hsl(330 80% 60% / 0.015) 0%, transparent 55%)
           `,
         }}
       />
 
-      <svg className="absolute inset-0 w-full h-full opacity-[0.025]">
+      <svg className="absolute inset-0 w-full h-full opacity-[0.018]">
         <defs>
-          <pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse">
-            <path d="M 60 0 L 0 0 0 60" fill="none" stroke="hsl(258 89% 66%)" strokeWidth="0.5"/>
+          <pattern id="grid" width="80" height="80" patternUnits="userSpaceOnUse">
+            <path d="M 80 0 L 0 0 0 80" fill="none" stroke="hsl(252 87% 64%)" strokeWidth="0.4"/>
           </pattern>
         </defs>
         <rect width="100%" height="100%" fill="url(#grid)" />
@@ -84,8 +84,8 @@ export const StaggerContainer: React.FC<{ children: React.ReactNode; className?:
         visible: {
           opacity: 1,
           transition: {
-            staggerChildren: 0.06,
-            delayChildren: 0.1,
+            staggerChildren: 0.05,
+            delayChildren: 0.08,
           },
         },
       }}
@@ -100,14 +100,14 @@ export const StaggerItem: React.FC<{ children: React.ReactNode; className?: stri
     <motion.div
       className={className}
       variants={{
-        hidden: { opacity: 0, y: 16, scale: 0.98 },
+        hidden: { opacity: 0, y: 20, scale: 0.97 },
         visible: {
           opacity: 1,
           y: 0,
           scale: 1,
           transition: {
-            duration: 0.5,
-            ease: [0.16, 1, 0.3, 1],
+            duration: 0.55,
+            ease: [0.22, 1, 0.36, 1],
           },
         },
       }}
@@ -120,12 +120,12 @@ export const StaggerItem: React.FC<{ children: React.ReactNode; className?: stri
 export const PageTransition: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
+      initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -12 }}
+      exit={{ opacity: 0, y: -16 }}
       transition={{ 
-        duration: 0.4, 
-        ease: [0.16, 1, 0.3, 1],
+        duration: 0.45, 
+        ease: [0.22, 1, 0.36, 1],
       }}
     >
       {children}
@@ -134,14 +134,14 @@ export const PageTransition: React.FC<{ children: React.ReactNode }> = ({ childr
 };
 
 export const FloatingParticles: React.FC = () => {
-  const particles = Array.from({ length: 30 }, (_, i) => ({
+  const particles = Array.from({ length: 24 }, (_, i) => ({
     id: i,
     x: Math.random() * 100,
     y: Math.random() * 100,
-    size: Math.random() * 3 + 1,
-    duration: Math.random() * 15 + 20,
-    delay: Math.random() * 5,
-    color: i % 3 === 0 ? 'hsl(258 89% 66%)' : i % 3 === 1 ? 'hsl(168 84% 52%)' : 'hsl(328 85% 60%)',
+    size: Math.random() * 2.5 + 1,
+    duration: Math.random() * 18 + 22,
+    delay: Math.random() * 6,
+    color: i % 3 === 0 ? 'hsl(252 87% 64%)' : i % 3 === 1 ? 'hsl(165 82% 51%)' : 'hsl(330 80% 60%)',
   }));
 
   return (
@@ -156,14 +156,14 @@ export const FloatingParticles: React.FC = () => {
             width: particle.size,
             height: particle.size,
             background: particle.color,
-            opacity: 0.15,
+            opacity: 0.1,
             filter: 'blur(0.5px)',
           }}
           animate={{
-            y: [0, -30, 0],
-            x: [0, Math.random() * 20 - 10, 0],
-            opacity: [0.1, 0.25, 0.1],
-            scale: [1, 1.2, 1],
+            y: [0, -25, 0],
+            x: [0, Math.random() * 15 - 7.5, 0],
+            opacity: [0.08, 0.2, 0.08],
+            scale: [1, 1.15, 1],
           }}
           transition={{
             duration: particle.duration,
@@ -178,7 +178,7 @@ export const FloatingParticles: React.FC = () => {
 };
 
 export const GlowOrb: React.FC<{ color?: string; size?: number; position?: { top?: string; left?: string; right?: string; bottom?: string } }> = ({ 
-  color = 'hsl(258 89% 66%)', 
+  color = 'hsl(252 87% 64%)', 
   size = 400,
   position = { top: '20%', left: '10%' }
 }) => {
@@ -189,16 +189,16 @@ export const GlowOrb: React.FC<{ color?: string; size?: number; position?: { top
         ...position,
         width: size,
         height: size,
-        background: `radial-gradient(circle, ${color} 0%, transparent 70%)`,
-        filter: 'blur(80px)',
-        opacity: 0.1,
+        background: `radial-gradient(circle, ${color} 0%, transparent 65%)`,
+        filter: 'blur(100px)',
+        opacity: 0.06,
       }}
       animate={{
-        scale: [1, 1.15, 1],
-        opacity: [0.08, 0.15, 0.08],
+        scale: [1, 1.12, 1],
+        opacity: [0.05, 0.1, 0.05],
       }}
       transition={{
-        duration: 8,
+        duration: 10,
         repeat: Infinity,
         ease: "easeInOut",
       }}
