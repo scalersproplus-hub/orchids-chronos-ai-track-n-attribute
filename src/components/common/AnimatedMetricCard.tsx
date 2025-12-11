@@ -319,7 +319,6 @@ export const AnimatedMetricCard: React.FC<AnimatedMetricCardProps> = ({
 
             <motion.div
               className="p-3.5 rounded-xl"
-              style={{ background: colors.iconBg }}
               initial={{ scale: 0, rotate: -180, opacity: 0 }}
               animate={{ scale: 1, rotate: 0, opacity: 1 }}
               transition={{ 
