@@ -268,7 +268,7 @@ const AppContent: React.FC = () => {
       <MobileNav currentPageLabel={currentPage.label} />
 
       <motion.main 
-        className={`flex-1 p-4 sm:p-6 lg:p-8 transition-all duration-300 pt-28 lg:pt-8 ${sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-72'}`}
+        className={`flex-1 p-4 sm:p-6 lg:p-8 transition-all duration-500 pt-28 lg:pt-8 ${sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-72'}`}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
@@ -289,9 +289,9 @@ const AppContent: React.FC = () => {
             >
               {currentPage.label}
             </motion.h1>
-            <p className="text-sm text-gray-500 mt-1 hidden sm:flex items-center gap-2">
-              <Zap className="w-3 h-3 text-[hsl(170_80%_50%)]" />
-              Active Profile: <span className="text-[hsl(270_91%_75%)] font-medium">{currentAccount.name}</span>
+            <p className="text-[13px] text-[hsl(225_12%_50%)] mt-1 hidden sm:flex items-center gap-2">
+              <Zap className="w-3 h-3 text-[hsl(165_82%_55%)]" />
+              Active Profile: <span className="text-[hsl(252_92%_78%)] font-medium">{currentAccount.name}</span>
             </p>
           </div>
           <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
@@ -300,7 +300,7 @@ const AppContent: React.FC = () => {
               onRefresh={handleRefresh}
               isRefreshing={isRefreshing}
             />
-            <div className="hidden sm:block w-px h-6 bg-[hsl(270_91%_65%_/_0.2)]" />
+            <div className="hidden sm:block w-px h-6 bg-[hsl(225_15%_18%)]" />
             <motion.button 
               onClick={() => setShowShortcuts(true)}
               className="hidden sm:block p-2.5 glass glass-hover rounded-xl transition-all"
@@ -308,11 +308,11 @@ const AppContent: React.FC = () => {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
-              <Keyboard className="w-4 h-4 text-gray-400" />
+              <Keyboard className="w-4 h-4 text-[hsl(225_12%_50%)]" />
             </motion.button>
             <motion.button 
               onClick={() => setCmdkOpen(true)}
-              className="hidden md:flex items-center gap-2 px-4 py-2.5 glass glass-hover rounded-xl text-sm font-medium text-gray-400"
+              className="hidden md:flex items-center gap-2 px-4 py-2.5 glass glass-hover rounded-xl text-[13px] font-medium text-[hsl(225_12%_55%)]"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
@@ -320,9 +320,9 @@ const AppContent: React.FC = () => {
               <span>Search</span>
               <kbd className="ml-2 px-2 py-1 text-[10px] rounded-lg font-mono"
                 style={{
-                  background: 'linear-gradient(135deg, hsl(230 20% 15%), hsl(230 20% 12%))',
-                  border: '1px solid hsl(270 91% 65% / 0.2)',
-                  color: 'hsl(270 91% 75%)',
+                  background: 'linear-gradient(145deg, hsl(225 15% 12%), hsl(225 15% 8%))',
+                  border: '1px solid hsl(252 87% 64% / 0.15)',
+                  color: 'hsl(252 92% 78%)',
                 }}
               >
                 ⌘K
@@ -330,21 +330,21 @@ const AppContent: React.FC = () => {
             </motion.button>
             <motion.button 
               onClick={() => setAiModalOpen(true)}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold transition-all"
               style={{
-                background: 'linear-gradient(135deg, hsl(270 91% 65% / 0.15), hsl(320 80% 60% / 0.1))',
-                border: '1px solid hsl(270 91% 65% / 0.3)',
-                color: 'hsl(270 91% 75%)',
+                background: 'linear-gradient(135deg, hsl(252 87% 64% / 0.12), hsl(330 80% 60% / 0.08))',
+                border: '1px solid hsl(252 87% 64% / 0.2)',
+                color: 'hsl(252 92% 78%)',
               }}
               whileHover={{ 
                 scale: 1.02,
-                boxShadow: '0 0 30px hsl(270 91% 65% / 0.2)'
+                boxShadow: '0 0 32px hsl(252 87% 64% / 0.15)'
               }}
               whileTap={{ scale: 0.98 }}
             >
               <motion.div
                 animate={{ rotate: [0, 10, -10, 0] }}
-                transition={{ duration: 2, repeat: Infinity }}
+                transition={{ duration: 2.5, repeat: Infinity }}
               >
                 <Sparkles className="w-4 h-4" />
               </motion.div>
