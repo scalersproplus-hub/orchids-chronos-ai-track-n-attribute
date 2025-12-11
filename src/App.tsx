@@ -4,7 +4,7 @@ import { Sidebar } from './components/Sidebar';
 import { Dashboard } from './components/Dashboard';
 import { JourneyMap } from './components/JourneyMap';
 import { Settings } from './components/Settings';
-import { getDataForMode } from './services/mockData';
+import { getDataForMode, MOCK_CAMPAIGNS } from './services/mockData';
 import { useApp } from './contexts/AppContext';
 import { AttributionModeler } from './components/AttributionModeler';
 import { IdentityGraph } from './components/IdentityGraph';
